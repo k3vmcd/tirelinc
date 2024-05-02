@@ -3,7 +3,7 @@
   "name": "Medisana Blood Pressure BLE",
   "bluetooth": [
     {
-      "manufacturer_id": 18498,
+      "manufacturer_id": 1479,
       "connectable": true
     }
   ],
