@@ -18,7 +18,7 @@ from sensor_state_data.enum import StrEnum
 
 from .const import (
     CHARACTERISTIC_BLOOD_PRESSURE,
-    CHARACTERISTIC_BATTERY,
+    # CHARACTERISTIC_BATTERY,
     UPDATE_INTERVAL,
     TIRE1_SENSOR_ID,
     TIRE2_SENSOR_ID,
@@ -31,12 +31,18 @@ _LOGGER = logging.getLogger(__name__)
 
 class MedisanaBPSensor(StrEnum):
 
-    SYSTOLIC = "systolic"
-    DIASTOLIC = "diastolic"
-    PULSE = "pulse"
-    SIGNAL_STRENGTH = "signal_strength"
-    BATTERY_PERCENT = "battery_percent"
-    TIMESTAMP = "timestamp"
+    PRESSURE = "pressure"
+    TIRE1_PRESSURE = "tire1_pressure"
+    TIRE2_PRESSURE = "tire2_pressure"
+    TIRE3_PRESSURE = "tire3_pressure"
+    TIRE4_PRESSURE = "tire4_pressure"
+    TIRE1_TEMPERATURE = "tire1_temperature"
+    TIRE2_TEMPERATURE = "tire2_temperature"
+    TIRE3_TEMPERATURE = "tire3_temperature"
+    TIRE4_TEMPERATURE = "tire4_temperature"
+    # SIGNAL_STRENGTH = "signal_strength"
+    # BATTERY_PERCENT = "battery_percent"
+    # TIMESTAMP = "timestamp"
 
 class MedisanaBPBluetoothDeviceData(BluetoothData):
     """Data for TireLinc sensors."""
@@ -84,6 +90,23 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
             elif data[0] == 0x00:
                 tire1_temperature = data[7]
                 tire1_pressure = data[9]
+            self.update_sensor(
+            key=str(MedisanaBPSensor.TIRE1_PRESSURE),
+            native_unit_of_measurement=Units.PRESSURE_PSI,
+            native_value=tire1_pressure,
+            device_class=SensorDeviceClass.PRESSURE,
+            name="Tire 1 Pressure",
+            )
+
+            self.update_sensor(
+            key=str(MedisanaBPSensor.TIRE1_TEMPERATURE),
+            native_unit_of_measurement=Units.TEMPERATURE_FAHRENHEIT,
+            native_value=tire1_temperature,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            name="Tire 1 Temperature",
+            )
+
+            _LOGGER.info("Got Tire 1 data from TPMS device (temperature: %s, pressure: %s)", tire1_temperature, tire1_pressure)
 
         elif sensor_id == TIRE2_SENSOR_ID_bytes:
             if data[0] == 0x02:
@@ -95,6 +118,24 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
                 tire2_temperature = data[7]
                 tire2_pressure = data[9]
 
+            self.update_sensor(
+            key=str(MedisanaBPSensor.TIRE2_PRESSURE),
+            native_unit_of_measurement=Units.PRESSURE_PSI,
+            native_value=tire2_pressure,
+            device_class=SensorDeviceClass.PRESSURE,
+            name="Tire 2 Pressure",
+            )
+
+            self.update_sensor(
+            key=str(MedisanaBPSensor.TIRE2_TEMPERATURE),
+            native_unit_of_measurement=Units.TEMPERATURE_FAHRENHEIT,
+            native_value=tire2_temperature,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            name="Tire 2 Temperature",
+            )
+
+            _LOGGER.info("Got Tire 2 data from TPMS device (temperature: %s, pressure: %s)", tire2_temperature, tire3_pressure)
+
         elif sensor_id == TIRE3_SENSOR_ID_bytes:
             if data[0] == 0x02:
                 tire3_alert_min_pressure = data[7]
@@ -104,6 +145,24 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
             elif data[0] == 0x00:
                 tire3_temperature = data[7]
                 tire3_pressure = data[9]
+
+            self.update_sensor(
+            key=str(MedisanaBPSensor.TIRE3_PRESSURE),
+            native_unit_of_measurement=Units.PRESSURE_PSI,
+            native_value=tire3_pressure,
+            device_class=SensorDeviceClass.PRESSURE,
+            name="Tire 3 Pressure",
+            )
+
+            self.update_sensor(
+            key=str(MedisanaBPSensor.TIRE3_TEMPERATURE),
+            native_unit_of_measurement=Units.TEMPERATURE_FAHRENHEIT,
+            native_value=tire3_temperature,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            name="Tire 3 Temperature",
+            )
+
+            _LOGGER.info("Got Tire 3 data from TPMS device (temperature: %s, pressure: %s)", tire3_temperature, tire3_pressure)
 
         elif sensor_id == TIRE4_SENSOR_ID_bytes:
             if data[0] == 0x02:
@@ -115,17 +174,35 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
                 tire4_temperature = data[7]
                 tire4_pressure = data[9]
 
+            self.update_sensor(
+            key=str(MedisanaBPSensor.TIRE4_PRESSURE),
+            native_unit_of_measurement=Units.PRESSURE_PSI,
+            native_value=tire4_pressure,
+            device_class=SensorDeviceClass.PRESSURE,
+            name="Tire 4 Pressure",
+            )
 
-        _LOGGER.info(
-            "Got data from BPM device (temperature: %s, pressure: %s)",
-            tire1_temperature, tire1_pressure)
+            self.update_sensor(
+            key=str(MedisanaBPSensor.TIRE4_TEMPERATURE),
+            native_unit_of_measurement=Units.TEMPERATURE_FAHRENHEIT,
+            native_value=tire4_temperature,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            name="Tire 4 Temperature",
+            )
+
+            _LOGGER.info("Got Tire 4 data from TPMS device (temperature: %s, pressure: %s)", tire4_temperature, tire4_pressure)
+
+
+        # _LOGGER.warn(
+        #     "Got data from BPM device (temperature: %s, pressure: %s)",
+        #     tire2_temperature, tire2_pressure)
 
         # self.update_sensor(
-        #     key=str(MedisanaBPSensor.SYSTOLIC),
-        #     native_unit_of_measurement=Units.PRESSURE_MMHG,
-        #     native_value=syst,
+        #     key=str(MedisanaBPSensor.PRESSURE),
+        #     native_unit_of_measurement=Units.PRESSURE_PSI,
+        #     native_value=tire2_pressure,
         #     device_class=SensorDeviceClass.PRESSURE,
-        #     name="Systolic",
+        #     name="Pressure",
         # )
         # self.update_sensor(
         #     key=str(MedisanaBPSensor.DIASTOLIC),
@@ -170,8 +247,7 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
 
         # Wait to see if a callback comes in.
         try:
-            # await asyncio.wait_for(self._event.wait(), 15)
-            _LOGGER.warn("Wait For Bleak")
+            await asyncio.wait_for(self._event.wait(), 15)
         except asyncio.TimeoutError:
             _LOGGER.warn("Timeout getting command data.")
         except:
