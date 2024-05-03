@@ -33,43 +33,56 @@ from .const import DOMAIN
 
 
 SENSOR_DESCRIPTIONS: dict[str, SensorEntityDescription] = {
-    MedisanaBPSensor.SYSTOLIC: SensorEntityDescription(
-        key=MedisanaBPSensor.SYSTOLIC,
-        native_unit_of_measurement=UnitOfPressure.MMHG,
+    MedisanaBPSensor.PRESSURE: SensorEntityDescription(
+        key=MedisanaBPSensor.PRESSURE,
+        native_unit_of_measurement=UnitOfPressure.PSI,
         device_class=SensorDeviceClass.PRESSURE,
-        icon="mdi:water-minus",
+        icon="mdi:car-tire-alert",
     ),
-    MedisanaBPSensor.DIASTOLIC: SensorEntityDescription(
-        key=MedisanaBPSensor.DIASTOLIC,
-        native_unit_of_measurement=UnitOfPressure.MMHG,
+    MedisanaBPSensor.TIRE1_PRESSURE: SensorEntityDescription(
+        key=MedisanaBPSensor.TIRE1_PRESSURE,
+        native_unit_of_measurement=UnitOfPressure.PSI,
         device_class=SensorDeviceClass.PRESSURE,
-        icon="mdi:water-plus",
+        icon="mdi:car-tire-alert",
     ),
-    MedisanaBPSensor.PULSE: SensorEntityDescription(
-        key=MedisanaBPSensor.PULSE,
-        native_unit_of_measurement="bpm",
-        icon="mdi:heart-flash",
+    MedisanaBPSensor.TIRE2_PRESSURE: SensorEntityDescription(
+        key=MedisanaBPSensor.TIRE2_PRESSURE,
+        native_unit_of_measurement=UnitOfPressure.PSI,
+        device_class=SensorDeviceClass.PRESSURE,
+        icon="mdi:car-tire-alert",
     ),
-    MedisanaBPSensor.SIGNAL_STRENGTH: SensorEntityDescription(
-        key=MedisanaBPSensor.SIGNAL_STRENGTH,
-        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
-        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
+    MedisanaBPSensor.TIRE3_PRESSURE: SensorEntityDescription(
+        key=MedisanaBPSensor.TIRE3_PRESSURE,
+        native_unit_of_measurement=UnitOfPressure.PSI,
+        device_class=SensorDeviceClass.PRESSURE,
+        icon="mdi:car-tire-alert",
     ),
-    MedisanaBPSensor.BATTERY_PERCENT: SensorEntityDescription(
-        key=MedisanaBPSensor.BATTERY_PERCENT,
-        device_class=SensorDeviceClass.BATTERY,
-        native_unit_of_measurement=PERCENTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
+    MedisanaBPSensor.TIRE4_PRESSURE: SensorEntityDescription(
+        key=MedisanaBPSensor.TIRE4_PRESSURE,
+        native_unit_of_measurement=UnitOfPressure.PSI,
+        device_class=SensorDeviceClass.PRESSURE,
+        icon="mdi:car-tire-alert",
     ),
-    MedisanaBPSensor.TIMESTAMP: SensorEntityDescription(
-        key=MedisanaBPSensor.TIMESTAMP,
-        device_class=SensorDeviceClass.TIMESTAMP,
-        icon="mdi:clock-time-four-outline",
-    ),
+    # MedisanaBPSensor.SIGNAL_STRENGTH: SensorEntityDescription(
+    #     key=MedisanaBPSensor.SIGNAL_STRENGTH,
+    #     device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+    #     native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+    #     state_class=SensorStateClass.MEASUREMENT,
+    #     entity_category=EntityCategory.DIAGNOSTIC,
+    #     entity_registry_enabled_default=False,
+    # ),
+    # MedisanaBPSensor.BATTERY_PERCENT: SensorEntityDescription(
+    #     key=MedisanaBPSensor.BATTERY_PERCENT,
+    #     device_class=SensorDeviceClass.BATTERY,
+    #     native_unit_of_measurement=PERCENTAGE,
+    #     state_class=SensorStateClass.MEASUREMENT,
+    #     entity_category=EntityCategory.DIAGNOSTIC,
+    # ),
+    # MedisanaBPSensor.TIMESTAMP: SensorEntityDescription(
+    #     key=MedisanaBPSensor.TIMESTAMP,
+    #     device_class=SensorDeviceClass.TIMESTAMP,
+    #     icon="mdi:clock-time-four-outline",
+    # ),
 
 }
 
