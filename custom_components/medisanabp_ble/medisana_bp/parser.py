@@ -40,7 +40,7 @@ class MedisanaBPSensor(StrEnum):
     TIRE2_TEMPERATURE = "tire2_temperature"
     TIRE3_TEMPERATURE = "tire3_temperature"
     TIRE4_TEMPERATURE = "tire4_temperature"
-    # SIGNAL_STRENGTH = "signal_strength"
+    SIGNAL_STRENGTH = "signal_strength"
     # BATTERY_PERCENT = "battery_percent"
     # TIMESTAMP = "timestamp"
 

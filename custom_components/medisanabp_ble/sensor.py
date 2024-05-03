@@ -18,7 +18,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
-    PERCENTAGE,
+    # PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
     UnitOfPressure,
@@ -63,14 +63,14 @@ SENSOR_DESCRIPTIONS: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.PRESSURE,
         icon="mdi:car-tire-alert",
     ),
-    # MedisanaBPSensor.SIGNAL_STRENGTH: SensorEntityDescription(
-    #     key=MedisanaBPSensor.SIGNAL_STRENGTH,
-    #     device_class=SensorDeviceClass.SIGNAL_STRENGTH,
-    #     native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-    #     state_class=SensorStateClass.MEASUREMENT,
-    #     entity_category=EntityCategory.DIAGNOSTIC,
-    #     entity_registry_enabled_default=False,
-    # ),
+    MedisanaBPSensor.SIGNAL_STRENGTH: SensorEntityDescription(
+        key=MedisanaBPSensor.SIGNAL_STRENGTH,
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
     # MedisanaBPSensor.BATTERY_PERCENT: SensorEntityDescription(
     #     key=MedisanaBPSensor.BATTERY_PERCENT,
     #     device_class=SensorDeviceClass.BATTERY,
