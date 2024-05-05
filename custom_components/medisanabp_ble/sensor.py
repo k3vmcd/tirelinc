@@ -22,6 +22,7 @@ from homeassistant.const import (
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
     UnitOfPressure,
+    UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -33,17 +34,17 @@ from .const import DOMAIN
 
 
 SENSOR_DESCRIPTIONS: dict[str, SensorEntityDescription] = {
-    MedisanaBPSensor.PRESSURE: SensorEntityDescription(
-        key=MedisanaBPSensor.PRESSURE,
-        native_unit_of_measurement=UnitOfPressure.PSI,
-        device_class=SensorDeviceClass.PRESSURE,
-        icon="mdi:car-tire-alert",
-    ),
     MedisanaBPSensor.TIRE1_PRESSURE: SensorEntityDescription(
         key=MedisanaBPSensor.TIRE1_PRESSURE,
         native_unit_of_measurement=UnitOfPressure.PSI,
         device_class=SensorDeviceClass.PRESSURE,
         icon="mdi:car-tire-alert",
+    ),
+    MedisanaBPSensor.TIRE1_TEMPERATURE: SensorEntityDescription(
+        key=MedisanaBPSensor.TIRE1_TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        icon="mdi:thermometer-lines",
     ),
     MedisanaBPSensor.TIRE2_PRESSURE: SensorEntityDescription(
         key=MedisanaBPSensor.TIRE2_PRESSURE,
@@ -51,17 +52,35 @@ SENSOR_DESCRIPTIONS: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.PRESSURE,
         icon="mdi:car-tire-alert",
     ),
+    MedisanaBPSensor.TIRE2_TEMPERATURE: SensorEntityDescription(
+        key=MedisanaBPSensor.TIRE2_TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        icon="mdi:thermometer-lines",
+    ),
     MedisanaBPSensor.TIRE3_PRESSURE: SensorEntityDescription(
         key=MedisanaBPSensor.TIRE3_PRESSURE,
         native_unit_of_measurement=UnitOfPressure.PSI,
         device_class=SensorDeviceClass.PRESSURE,
         icon="mdi:car-tire-alert",
     ),
+    MedisanaBPSensor.TIRE3_TEMPERATURE: SensorEntityDescription(
+        key=MedisanaBPSensor.TIRE3_TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        icon="mdi:thermometer-lines",
+    ),
     MedisanaBPSensor.TIRE4_PRESSURE: SensorEntityDescription(
         key=MedisanaBPSensor.TIRE4_PRESSURE,
         native_unit_of_measurement=UnitOfPressure.PSI,
         device_class=SensorDeviceClass.PRESSURE,
         icon="mdi:car-tire-alert",
+    ),
+    MedisanaBPSensor.TIRE4_TEMPERATURE: SensorEntityDescription(
+        key=MedisanaBPSensor.TIRE4_TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        icon="mdi:thermometer-lines",
     ),
     MedisanaBPSensor.SIGNAL_STRENGTH: SensorEntityDescription(
         key=MedisanaBPSensor.SIGNAL_STRENGTH,
