@@ -1,4 +1,4 @@
-"""The MedisanaBP integration."""
+"""The TireLinc integration."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import CoreState, HomeAssistant
 
-from .medisana_bp import MedisanaBPBluetoothDeviceData, SensorUpdate
+from .tirelinc import TireLincBluetoothDeviceData, SensorUpdate
 from .const import DOMAIN
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
@@ -26,10 +26,10 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up MedisanaBP BLE device from a config entry."""
+    """Set up TireLinc BLE device from a config entry."""
     address = entry.unique_id
     assert address is not None
-    data = MedisanaBPBluetoothDeviceData()
+    data = TireLincBluetoothDeviceData()
 
     def _needs_poll(
         service_info: BluetoothServiceInfoBleak, last_poll: float | None
@@ -47,8 +47,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
 
     async def _async_poll(service_info: BluetoothServiceInfoBleak) -> SensorUpdate:
-        # BluetoothServiceInfoBleak is defined in HA, otherwise would just pass it
-        # directly to the elissabp code
         # Make sure the device we have is one that we can connect with
         # in case its coming from a passive scanner
         if service_info.connectable:

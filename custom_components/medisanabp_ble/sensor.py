@@ -1,8 +1,8 @@
-"""Support for MedisanaBP sensors."""
+"""Support for TireLinc sensors."""
 
 from __future__ import annotations
 
-from .medisana_bp import MedisanaBPSensor, SensorUpdate
+from .tirelinc import TireLincSensor, SensorUpdate
 
 from homeassistant import config_entries
 from homeassistant.components.bluetooth.passive_update_processor import (
@@ -34,71 +34,71 @@ from .const import DOMAIN
 
 
 SENSOR_DESCRIPTIONS: dict[str, SensorEntityDescription] = {
-    MedisanaBPSensor.TIRE1_PRESSURE: SensorEntityDescription(
-        key=MedisanaBPSensor.TIRE1_PRESSURE,
+    TireLincSensor.TIRE1_PRESSURE: SensorEntityDescription(
+        key=TireLincSensor.TIRE1_PRESSURE,
         native_unit_of_measurement=UnitOfPressure.PSI,
         device_class=SensorDeviceClass.PRESSURE,
         icon="mdi:car-tire-alert",
     ),
-    MedisanaBPSensor.TIRE1_TEMPERATURE: SensorEntityDescription(
-        key=MedisanaBPSensor.TIRE1_TEMPERATURE,
+    TireLincSensor.TIRE1_TEMPERATURE: SensorEntityDescription(
+        key=TireLincSensor.TIRE1_TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
         device_class=SensorDeviceClass.TEMPERATURE,
         icon="mdi:thermometer-lines",
     ),
-    MedisanaBPSensor.TIRE2_PRESSURE: SensorEntityDescription(
-        key=MedisanaBPSensor.TIRE2_PRESSURE,
+    TireLincSensor.TIRE2_PRESSURE: SensorEntityDescription(
+        key=TireLincSensor.TIRE2_PRESSURE,
         native_unit_of_measurement=UnitOfPressure.PSI,
         device_class=SensorDeviceClass.PRESSURE,
         icon="mdi:car-tire-alert",
     ),
-    MedisanaBPSensor.TIRE2_TEMPERATURE: SensorEntityDescription(
-        key=MedisanaBPSensor.TIRE2_TEMPERATURE,
+    TireLincSensor.TIRE2_TEMPERATURE: SensorEntityDescription(
+        key=TireLincSensor.TIRE2_TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
         device_class=SensorDeviceClass.TEMPERATURE,
         icon="mdi:thermometer-lines",
     ),
-    MedisanaBPSensor.TIRE3_PRESSURE: SensorEntityDescription(
-        key=MedisanaBPSensor.TIRE3_PRESSURE,
+    TireLincSensor.TIRE3_PRESSURE: SensorEntityDescription(
+        key=TireLincSensor.TIRE3_PRESSURE,
         native_unit_of_measurement=UnitOfPressure.PSI,
         device_class=SensorDeviceClass.PRESSURE,
         icon="mdi:car-tire-alert",
     ),
-    MedisanaBPSensor.TIRE3_TEMPERATURE: SensorEntityDescription(
-        key=MedisanaBPSensor.TIRE3_TEMPERATURE,
+    TireLincSensor.TIRE3_TEMPERATURE: SensorEntityDescription(
+        key=TireLincSensor.TIRE3_TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
         device_class=SensorDeviceClass.TEMPERATURE,
         icon="mdi:thermometer-lines",
     ),
-    MedisanaBPSensor.TIRE4_PRESSURE: SensorEntityDescription(
-        key=MedisanaBPSensor.TIRE4_PRESSURE,
+    TireLincSensor.TIRE4_PRESSURE: SensorEntityDescription(
+        key=TireLincSensor.TIRE4_PRESSURE,
         native_unit_of_measurement=UnitOfPressure.PSI,
         device_class=SensorDeviceClass.PRESSURE,
         icon="mdi:car-tire-alert",
     ),
-    MedisanaBPSensor.TIRE4_TEMPERATURE: SensorEntityDescription(
-        key=MedisanaBPSensor.TIRE4_TEMPERATURE,
+    TireLincSensor.TIRE4_TEMPERATURE: SensorEntityDescription(
+        key=TireLincSensor.TIRE4_TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
         device_class=SensorDeviceClass.TEMPERATURE,
         icon="mdi:thermometer-lines",
     ),
-    MedisanaBPSensor.SIGNAL_STRENGTH: SensorEntityDescription(
-        key=MedisanaBPSensor.SIGNAL_STRENGTH,
+    TireLincSensor.SIGNAL_STRENGTH: SensorEntityDescription(
+        key=TireLincSensor.SIGNAL_STRENGTH,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
-    # MedisanaBPSensor.BATTERY_PERCENT: SensorEntityDescription(
-    #     key=MedisanaBPSensor.BATTERY_PERCENT,
+    # TireLincSensor.BATTERY_PERCENT: SensorEntityDescription(
+    #     key=TireLincSensor.BATTERY_PERCENT,
     #     device_class=SensorDeviceClass.BATTERY,
     #     native_unit_of_measurement=PERCENTAGE,
     #     state_class=SensorStateClass.MEASUREMENT,
     #     entity_category=EntityCategory.DIAGNOSTIC,
     # ),
-    # MedisanaBPSensor.TIMESTAMP: SensorEntityDescription(
-    #     key=MedisanaBPSensor.TIMESTAMP,
+    # TireLincSensor.TIMESTAMP: SensorEntityDescription(
+    #     key=TireLincSensor.TIMESTAMP,
     #     device_class=SensorDeviceClass.TIMESTAMP,
     #     icon="mdi:clock-time-four-outline",
     # ),
@@ -137,14 +137,14 @@ async def async_setup_entry(
     entry: config_entries.ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the MedisanaBP BLE sensors."""
+    """Set up the TireLinc BLE sensors."""
     coordinator: PassiveBluetoothProcessorCoordinator = hass.data[DOMAIN][
         entry.entry_id
     ]
     processor = PassiveBluetoothDataProcessor(sensor_update_to_bluetooth_data_update)
     entry.async_on_unload(
         processor.async_add_entities_listener(
-            MedisanaBPBluetoothSensorEntity, async_add_entities
+            TireLincBluetoothSensorEntity, async_add_entities
         )
     )
     entry.async_on_unload(
@@ -152,11 +152,11 @@ async def async_setup_entry(
     )
 
 
-class MedisanaBPBluetoothSensorEntity(
+class TireLincBluetoothSensorEntity(
     PassiveBluetoothProcessorEntity[PassiveBluetoothDataProcessor[str | int | None]],
     SensorEntity,
 ):
-    """Representation of a MedisanaBP sensor."""
+    """Representation of a TireLinc sensor."""
 
     @property
     def native_value(self) -> str | int | None:

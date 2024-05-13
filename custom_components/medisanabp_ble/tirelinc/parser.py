@@ -17,7 +17,7 @@ from sensor_state_data import SensorDeviceClass, SensorUpdate, Units
 from sensor_state_data.enum import StrEnum
 
 from .const import (
-    CHARACTERISTIC_BLOOD_PRESSURE,
+    CHARACTERISTIC_TIRELINC_SENSORS,
     # CHARACTERISTIC_BATTERY,
     UPDATE_INTERVAL,
     TIRE1_SENSOR_ID,
@@ -30,7 +30,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-class MedisanaBPSensor(StrEnum):
+class TireLincSensor(StrEnum):
 
     PRESSURE = "pressure"
     TIRE1_PRESSURE = "tire1_pressure"
@@ -45,7 +45,7 @@ class MedisanaBPSensor(StrEnum):
     # BATTERY_PERCENT = "battery_percent"
     # TIMESTAMP = "timestamp"
 
-class MedisanaBPBluetoothDeviceData(BluetoothData):
+class TireLincBluetoothDeviceData(BluetoothData):
     """Data for TireLinc sensors."""
 
     def __init__(self) -> None:
@@ -69,6 +69,8 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
         This is called every time we get a service_info for a device. It means the
         device is working and online.
         """
+        _LOGGER.warn("Last poll: %s", last_poll)
+        _LOGGER.warn("Update interval: %s", UPDATE_INTERVAL)
         return not last_poll or last_poll > UPDATE_INTERVAL
 
     # @retry_bluetooth_connection_error()
@@ -96,7 +98,7 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
                     tire1_pressure = data[9]
 
                 self.update_sensor(
-                key=str(MedisanaBPSensor.TIRE1_PRESSURE),
+                key=str(TireLincSensor.TIRE1_PRESSURE),
                 native_unit_of_measurement=Units.PRESSURE_PSI,
                 native_value=tire1_pressure,
                 device_class=SensorDeviceClass.PRESSURE,
@@ -104,7 +106,7 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
                 )
 
                 self.update_sensor(
-                key=str(MedisanaBPSensor.TIRE1_TEMPERATURE),
+                key=str(TireLincSensor.TIRE1_TEMPERATURE),
                 native_unit_of_measurement=Units.TEMP_FAHRENHEIT,
                 native_value=tire1_temperature,
                 device_class=SensorDeviceClass.TEMPERATURE,
@@ -122,7 +124,7 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
                     tire2_pressure = data[9]
 
                 self.update_sensor(
-                key=str(MedisanaBPSensor.TIRE2_PRESSURE),
+                key=str(TireLincSensor.TIRE2_PRESSURE),
                 native_unit_of_measurement=Units.PRESSURE_PSI,
                 native_value=tire2_pressure,
                 device_class=SensorDeviceClass.PRESSURE,
@@ -130,7 +132,7 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
                 )
 
                 self.update_sensor(
-                key=str(MedisanaBPSensor.TIRE2_TEMPERATURE),
+                key=str(TireLincSensor.TIRE2_TEMPERATURE),
                 native_unit_of_measurement=Units.TEMP_FAHRENHEIT,
                 native_value=tire2_temperature,
                 device_class=SensorDeviceClass.TEMPERATURE,
@@ -148,7 +150,7 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
                     tire3_pressure = data[9]
 
                 self.update_sensor(
-                key=str(MedisanaBPSensor.TIRE3_PRESSURE),
+                key=str(TireLincSensor.TIRE3_PRESSURE),
                 native_unit_of_measurement=Units.PRESSURE_PSI,
                 native_value=tire3_pressure,
                 device_class=SensorDeviceClass.PRESSURE,
@@ -156,7 +158,7 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
                 )
 
                 self.update_sensor(
-                key=str(MedisanaBPSensor.TIRE3_TEMPERATURE),
+                key=str(TireLincSensor.TIRE3_TEMPERATURE),
                 native_unit_of_measurement=Units.TEMP_FAHRENHEIT,
                 native_value=tire3_temperature,
                 device_class=SensorDeviceClass.TEMPERATURE,
@@ -174,7 +176,7 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
                     tire4_pressure = data[9]
 
                 self.update_sensor(
-                key=str(MedisanaBPSensor.TIRE4_PRESSURE),
+                key=str(TireLincSensor.TIRE4_PRESSURE),
                 native_unit_of_measurement=Units.PRESSURE_PSI,
                 native_value=tire4_pressure,
                 device_class=SensorDeviceClass.PRESSURE,
@@ -182,7 +184,7 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
                 )
 
                 self.update_sensor(
-                key=str(MedisanaBPSensor.TIRE4_TEMPERATURE),
+                key=str(TireLincSensor.TIRE4_TEMPERATURE),
                 native_unit_of_measurement=Units.TEMP_FAHRENHEIT,
                 native_value=tire4_temperature,
                 device_class=SensorDeviceClass.TEMPERATURE,
@@ -195,11 +197,14 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
 
         # Increment the notification count
         self._notification_count += 1
+        _LOGGER.warn("Notification count %s", self._notification_count)
         # Check if all expected notifications are processed
         if self._notification_count >= EXPECTED_NOTIFICATION_COUNT:
             # Reset the counter and set the event to indicate that all notifications are processed
             self._notification_count = 0
+            _LOGGER.warn("Notification count %s", self._notification_count)
             self._event.set()
+            _LOGGER.warn("Event %s", self._event.is_set())
         return
 
     async def async_poll(self, ble_device: BLEDevice) -> SensorUpdate:
@@ -212,7 +217,7 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
         )
         try:
             await client.start_notify(
-                CHARACTERISTIC_BLOOD_PRESSURE, self.notification_handler
+                CHARACTERISTIC_TIRELINC_SENSORS, self.notification_handler
             )
             # Wait until all notifications are processed
             try:
@@ -222,7 +227,7 @@ class MedisanaBPBluetoothDeviceData(BluetoothData):
         except:
             _LOGGER.warn("Notify Bleak error")
         finally:
-            await client.stop_notify(CHARACTERISTIC_BLOOD_PRESSURE)
+            # await client.stop_notify(CHARACTERISTIC_TIRELINC_SENSORS)
             await client.disconnect()
             _LOGGER.debug("Disconnected from active bluetooth client")
         return self._finish_update()

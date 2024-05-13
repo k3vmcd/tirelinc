@@ -1,8 +1,8 @@
-"""Constants for MedisanaBP BLE."""
+"""Constants for TireLinc"""
 
 from __future__ import annotations
 
-from .medisana_bp import DeviceKey
+from .tirelinc import DeviceKey
 
 from homeassistant.components.bluetooth.passive_update_processor import (
     PassiveBluetoothEntityKey,

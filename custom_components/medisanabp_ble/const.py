@@ -1,3 +1,3 @@
-"""Constants for MedisanaBP BLE."""
+"""Constants for TireLinc"""
 
-DOMAIN = "medisanabp_ble"
+DOMAIN = "tirelinc"
