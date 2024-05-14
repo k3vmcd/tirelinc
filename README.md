@@ -1,24 +1,39 @@
-[![GitHub Release](https://img.shields.io/github/release/bkbilly/medisanabp_ble.svg?style=flat-square)](https://github.com/bkbilly/medisanabp_ble/releases)
-[![License](https://img.shields.io/github/license/bkbilly/medisanabp_ble.svg?style=flat-square)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/release/k3vmcd/ha-tirelinc.svg?style=flat-square)](https://github.com/k3vmcd/ha-tirelinc/releases)
+[![License](https://img.shields.io/github/license/k3vmcd/ha-tirelinc.svg?style=flat-square)](LICENSE)
 [![hacs](https://img.shields.io/badge/HACS-default-orange.svg?style=flat-square)](https://hacs.xyz)
 
 
-# Medisana Blood Pressure BLE
-Integrates Bluetooth LE (https://www.medisana.com/en/Health-control/Blood-pressure-monitor/) to Home Assistant using active connection to get infromation from the sensors.
+# Home Assistant TireLinc Integration
+Integrates TireLinc TPMS (https://www.lippert.com/rv-camping/collections/tire-linc) to Home Assistant using active connection to get information from the sensors.
+
+Current Limitations:
+ - You MUST successfully pair the tires to the central TireLinc repeater using the manufacturer device before data will be received by this integration. The tires report their sensor data on the 433MHz band and the central repeater unit translates that into the Bluetooth signal required by this integration. This integration will NOT read the 433MHz data directly.
+ - Scans 4 tires only. May throw errors with 2 tires and currently will not scan 6 tires. (The user may manually adjust the code to edit the number of tires scanned by editing `./sensor.py`, `./tirelinc/const.py`, and `./tirelinc/parser.py`).
+ - Code that could possibly expose the configured alert thresholds is currently unused and will not expose these sensors (unless user manually adds the sensors with additional edits to sensor.py). It is left in there to decode what was discovered in reverse engineering the hex data bytes. These thresholds - min/max pressure, max temperature, and max temperature change alerts - are configured in the manufactuerer device. The expectation of this integration is the user would configure native Home Assistant automations and set their own, separate thresholds within Home Assistant and therefore these manufacturer data would be irrelevant/confusing.
+ 
 
 Exposes the following sensors:
- - Battery
- - Diastolic pressure
- - Systolic pressure
- - Pulses
- - Measured date
+ - Tire 1 Pressure
+ - Tire 1 Temperature
+ - Tire 2 Pressure
+ - Tire 2 Temperature
+ - Tire 3 Pressure
+ - Tire 3 Temperature
+ - Tire 4 Pressure
+ - Tire 4 Temperature
+
+In a 4 tire setup, the tire locations will be:
+ - Tire 1: Front Left
+ - Tire 2: Rear Left
+ - Tire 3: Front Right
+ - Tire 4: Rear Right
 
 ## Installation
 
 Easiest install is via [HACS](https://hacs.xyz/):
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bkbilly&repository=medisanabp_ble&category=integration)
+<!-- [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=k3vmcd&repository=tirelinc&category=integration)
 
-`HACS -> Explore & Add Repositories -> Medisana Blood Pressure BLE`
+`HACS -> Explore & Add Repositories -> TireLinc` -->
 
 The device will be autodiscovered once the data are received by any bluetooth proxy.
