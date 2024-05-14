@@ -37,3 +37,15 @@ Easiest install is via [HACS](https://hacs.xyz/):
 `HACS -> Explore & Add Repositories -> TireLinc` -->
 
 The device will be autodiscovered once the data are received by any bluetooth proxy.
+
+If you are using an ESPHome device to connect to TireLinc, ensure you have it configured with:
+
+```
+bluetooth_proxy:
+  active: True
+```
+and, as the ESPHome docs suggest to improve RAM management:
+```
+  framework:
+    type: esp-idf
+```
