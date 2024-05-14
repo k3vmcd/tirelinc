@@ -34,9 +34,9 @@ In a 4 tire setup, the tire locations will be:
 
 Easiest install is via [HACS](https://hacs.xyz/):
 
-<!-- [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=k3vmcd&repository=tirelinc&category=integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=k3vmcd&repository=ha-tirelinc&category=integration)
 
-`HACS -> Explore & Add Repositories -> TireLinc` -->
+`HACS -> Explore & Add Repositories -> TireLinc`
 
 The device will be autodiscovered once the data are received by any bluetooth proxy.
 
