@@ -227,7 +227,7 @@ class TireLincBluetoothDeviceData(BluetoothData):
         except:
             _LOGGER.warn("Notify Bleak error")
         finally:
-            # await client.stop_notify(CHARACTERISTIC_TIRELINC_SENSORS)
             await client.disconnect()
+            self._event.clear()
             _LOGGER.debug("Disconnected from active bluetooth client")
         return self._finish_update()
