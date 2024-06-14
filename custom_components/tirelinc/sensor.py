@@ -153,7 +153,7 @@ async def async_setup_entry(
 
 
 class TireLincBluetoothSensorEntity(
-    PassiveBluetoothProcessorEntity[PassiveBluetoothDataProcessor[str | int | None]],
+    PassiveBluetoothProcessorEntity,
     SensorEntity,
 ):
     """Representation of a TireLinc sensor."""
