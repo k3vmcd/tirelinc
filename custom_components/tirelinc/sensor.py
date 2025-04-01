@@ -1,6 +1,8 @@
 """Support for TireLinc sensors."""
 from __future__ import annotations
 
+import logging
+
 from dataclasses import dataclass
 
 from homeassistant import config_entries
@@ -23,63 +25,21 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from .const import DOMAIN
+from .const import DOMAIN, CONF_SENSORS, MAX_TIRES
 from .parser import TireLincSensor
+
+_LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class TireLincSensorEntityDescription(SensorEntityDescription):
     """Describes TireLinc sensor entity."""
 
-SENSOR_DESCRIPTIONS: dict[str, TireLincSensorEntityDescription] = {
-    TireLincSensor.TIRE1_PRESSURE: TireLincSensorEntityDescription(
-        key=TireLincSensor.TIRE1_PRESSURE,
-        native_unit_of_measurement=UnitOfPressure.PSI,
-        device_class=SensorDeviceClass.PRESSURE,
-        icon="mdi:car-tire-alert",
-    ),
-    TireLincSensor.TIRE1_TEMPERATURE: TireLincSensorEntityDescription(
-        key=TireLincSensor.TIRE1_TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer-lines",
-    ),
-    TireLincSensor.TIRE2_PRESSURE: TireLincSensorEntityDescription(
-        key=TireLincSensor.TIRE2_PRESSURE,
-        native_unit_of_measurement=UnitOfPressure.PSI,
-        device_class=SensorDeviceClass.PRESSURE,
-        icon="mdi:car-tire-alert",
-    ),
-    TireLincSensor.TIRE2_TEMPERATURE: TireLincSensorEntityDescription(
-        key=TireLincSensor.TIRE2_TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer-lines",
-    ),
-    TireLincSensor.TIRE3_PRESSURE: TireLincSensorEntityDescription(
-        key=TireLincSensor.TIRE3_PRESSURE,
-        native_unit_of_measurement=UnitOfPressure.PSI,
-        device_class=SensorDeviceClass.PRESSURE,
-        icon="mdi:car-tire-alert",
-    ),
-    TireLincSensor.TIRE3_TEMPERATURE: TireLincSensorEntityDescription(
-        key=TireLincSensor.TIRE3_TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer-lines",
-    ),
-    TireLincSensor.TIRE4_PRESSURE: TireLincSensorEntityDescription(
-        key=TireLincSensor.TIRE4_PRESSURE,
-        native_unit_of_measurement=UnitOfPressure.PSI,
-        device_class=SensorDeviceClass.PRESSURE,
-        icon="mdi:car-tire-alert",
-    ),
-    TireLincSensor.TIRE4_TEMPERATURE: TireLincSensorEntityDescription(
-        key=TireLincSensor.TIRE4_TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer-lines",
-    ),
-    TireLincSensor.SIGNAL_STRENGTH: TireLincSensorEntityDescription(
+def create_sensor_descriptions() -> dict[str, TireLincSensorEntityDescription]:
+    """Create sensor descriptions."""
+    descriptions = {}
+    
+    # Add signal strength sensor
+    descriptions[TireLincSensor.SIGNAL_STRENGTH] = TireLincSensorEntityDescription(
         key=TireLincSensor.SIGNAL_STRENGTH,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
@@ -87,8 +47,26 @@ SENSOR_DESCRIPTIONS: dict[str, TireLincSensorEntityDescription] = {
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_visible_default=False,
         name="Signal Strength",
-    ),
-}
+    )
+    
+    # Create template descriptions for tire sensors
+    for i in range(1, MAX_TIRES + 1):
+        descriptions[f"tire{i}_pressure"] = TireLincSensorEntityDescription(
+            key=f"tire{i}_pressure",
+            native_unit_of_measurement=UnitOfPressure.PSI,
+            device_class=SensorDeviceClass.PRESSURE,
+            icon="mdi:car-tire-alert",
+        )
+        descriptions[f"tire{i}_temperature"] = TireLincSensorEntityDescription(
+            key=f"tire{i}_temperature",
+            native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            icon="mdi:thermometer-lines",
+        )
+    
+    return descriptions
+
+SENSOR_DESCRIPTIONS = create_sensor_descriptions()
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -98,10 +76,41 @@ async def async_setup_entry(
     """Set up the TireLinc BLE sensors."""
     coordinator: DataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
     
-    entities = []
-    for description in SENSOR_DESCRIPTIONS.values():
-        entities.append(TireLincSensorEntity(coordinator, description, entry))
+    # Get configured sensors from entry
+    configured_sensors = entry.data.get(CONF_SENSORS, {})
+    _LOGGER.debug("Setting up sensors for config: %s", configured_sensors)
     
+    entities = []
+    
+    # Create signal strength sensor
+    signal_desc = SENSOR_DESCRIPTIONS.get("signal_strength")
+    if signal_desc:
+        entities.append(TireLincSensorEntity(coordinator, signal_desc, entry))
+        _LOGGER.debug("Added signal strength sensor")
+    
+    # Create tire sensors based on configuration
+    for tire_key, sensor_id in configured_sensors.items():
+        # Extract tire number from key (e.g., "tire_1" -> "1")
+        try:
+            tire_num = tire_key.split("_")[1]
+            _LOGGER.debug("Setting up sensors for tire %s (ID: %s)", tire_num, sensor_id)
+            
+            # Add pressure sensor
+            pressure_key = f"tire{tire_num}_pressure"
+            if pressure_key in SENSOR_DESCRIPTIONS:
+                entities.append(TireLincSensorEntity(coordinator, SENSOR_DESCRIPTIONS[pressure_key], entry))
+                _LOGGER.debug("Added pressure sensor for tire %s", tire_num)
+            
+            # Add temperature sensor
+            temp_key = f"tire{tire_num}_temperature"
+            if temp_key in SENSOR_DESCRIPTIONS:
+                entities.append(TireLincSensorEntity(coordinator, SENSOR_DESCRIPTIONS[temp_key], entry))
+                _LOGGER.debug("Added temperature sensor for tire %s", tire_num)
+                
+        except (IndexError, ValueError) as err:
+            _LOGGER.error("Error setting up tire sensors for %s: %s", tire_key, err)
+    
+    _LOGGER.debug("Created %d sensor entities", len(entities))
     async_add_entities(entities)
 
 

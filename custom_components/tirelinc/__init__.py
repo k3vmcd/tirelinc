@@ -5,6 +5,8 @@ import logging
 from datetime import timedelta
 
 from homeassistant.components.bluetooth import async_ble_device_from_address
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
+from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -14,7 +16,7 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
-from .const import DOMAIN, POLL_INTERVAL_STATIONARY, POLL_INTERVAL_MOVING
+from .const import DOMAIN, POLL_INTERVAL_STATIONARY, POLL_INTERVAL_MOVING, CONF_SENSORS
 from .parser import TireLincBluetoothDeviceData
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.SWITCH]
@@ -28,6 +30,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady("Device address not found")
 
     device_data = TireLincBluetoothDeviceData()
+    
+    # Set sensor mappings from config entry
+    if CONF_SENSORS in entry.data:
+        _LOGGER.debug("Setting up sensor mappings: %s", entry.data[CONF_SENSORS])
+        device_data.set_sensor_mappings(entry.data[CONF_SENSORS])
 
     async def _async_update():
         """Poll the device."""
@@ -106,6 +113,8 @@ class TireLincDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Fetch data from API endpoint."""
         try:
-            return await self._update_method()
+            data = await self._update_method()
+            _LOGGER.debug("Updated data: %s", data)
+            return data
         except Exception as err:
             raise UpdateFailed(f"Error communicating with device: {err}")

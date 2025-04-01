@@ -19,10 +19,6 @@ from .const import (
     SERVICE_UUID,
     READ_CHARACTERISTIC,
     WRITE_CHARACTERISTIC,
-    TIRE1_SENSOR_ID,
-    TIRE2_SENSOR_ID,
-    TIRE3_SENSOR_ID,
-    TIRE4_SENSOR_ID,
     CONFIG_NOTIFICATION_COUNT,
     SENSOR_NOTIFICATION_COUNT,
 )
@@ -31,19 +27,18 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class TireLincSensor(StrEnum):
-
-    PRESSURE = "pressure"
-    TIRE1_PRESSURE = "tire1_pressure"
-    TIRE2_PRESSURE = "tire2_pressure"
-    TIRE3_PRESSURE = "tire3_pressure"
-    TIRE4_PRESSURE = "tire4_pressure"
-    TIRE1_TEMPERATURE = "tire1_temperature"
-    TIRE2_TEMPERATURE = "tire2_temperature"
-    TIRE3_TEMPERATURE = "tire3_temperature"
-    TIRE4_TEMPERATURE = "tire4_temperature"
+    """Available sensors."""
     SIGNAL_STRENGTH = "signal_strength"
-    # BATTERY_PERCENT = "battery_percent"
-    # TIMESTAMP = "timestamp"
+    
+    @classmethod
+    def tire_pressure(cls, num: str) -> str:
+        """Get tire pressure sensor key."""
+        return f"tire{num}_pressure"
+        
+    @classmethod
+    def tire_temperature(cls, num: str) -> str:
+        """Get tire temperature sensor key."""
+        return f"tire{num}_temperature"
 
 class TireLincBluetoothDeviceData(BluetoothData):
     """Data for TireLinc sensors."""
@@ -58,6 +53,32 @@ class TireLincBluetoothDeviceData(BluetoothData):
         self._config_count = 0
         self._sensor_count = 0
         self._event = asyncio.Event()
+        self._discovered_sensors = set()  # Track discovered sensors
+        self._sensor_mappings = {}  # Will be populated from config entry
+        self._learning_mode = False
+
+    @property
+    def discovered_sensors(self) -> set[str]:
+        """Return set of discovered sensor IDs."""
+        return self._discovered_sensors
+
+    def set_learning_mode(self, enabled: bool) -> None:
+        """Set learning mode."""
+        self._learning_mode = enabled
+
+    def set_sensor_mappings(self, mappings: dict[str, str]) -> None:
+        """Set the sensor ID to position mappings."""
+        _LOGGER.debug("Setting sensor mappings: %s", mappings)
+        self._sensor_mappings = {}
+        for position, sensor_id in mappings.items():
+            # Convert position (e.g., "tire_1") to number (1)
+            try:
+                number = position.split("_")[1]
+                sensor_bytes = bytes.fromhex(sensor_id.replace("-", ""))
+                self._sensor_mappings[sensor_bytes] = number
+                _LOGGER.debug("Mapped sensor %s to position %s", sensor_id, number)
+            except (IndexError, ValueError) as err:
+                _LOGGER.error("Invalid position format: %s (%s)", position, err)
 
     def supported(self, service_info: BluetoothServiceInfo) -> bool:
         """Check if this device is supported."""
@@ -101,8 +122,12 @@ class TireLincBluetoothDeviceData(BluetoothData):
                 timeout=10.0
             )
 
-            # Add signal strength to data
-            self._data["signal_strength"] = ble_device.rssi
+            # Add signal strength from advertisement data
+            if hasattr(ble_device, "advertisement"):
+                self._data["signal_strength"] = ble_device.advertisement.rssi
+            else:
+                # Fallback for older versions
+                self._data["signal_strength"] = getattr(ble_device, "rssi", 0)
 
             # Get characteristics
             read_char = client.services.get_characteristic(READ_CHARACTERISTIC)
@@ -195,46 +220,45 @@ class TireLincBluetoothDeviceData(BluetoothData):
             _LOGGER.error("Received invalid data length: %s", len(data) if data else 0)
             return
 
-        try:
-            TIRE1_SENSOR_ID_bytes = bytes.fromhex(TIRE1_SENSOR_ID.replace("-", ""))
-            TIRE2_SENSOR_ID_bytes = bytes.fromhex(TIRE2_SENSOR_ID.replace("-", ""))
-            TIRE3_SENSOR_ID_bytes = bytes.fromhex(TIRE3_SENSOR_ID.replace("-", ""))
-            TIRE4_SENSOR_ID_bytes = bytes.fromhex(TIRE4_SENSOR_ID.replace("-", ""))
-
-            if data[0] not in [0x04, 0x01]:
-                try:
-                    sensor_id = bytes([data[1], data[2], data[3], data[4]])
-                    self._handle_sensor_data(sensor_id, data)
-                except IndexError as e:
-                    _LOGGER.error("Invalid sensor data format: %s", e)
-        except Exception as e:
-            _LOGGER.error("Error processing data: %s", e)
+        if data[0] not in [0x04, 0x01]:
+            try:
+                sensor_id = bytes([data[1], data[2], data[3], data[4]])
+                self._handle_sensor_data(sensor_id, data)
+            except IndexError as e:
+                _LOGGER.error("Invalid sensor data format: %s", e)
 
     def _handle_sensor_data(self, sensor_id: bytes, data: bytearray) -> None:
         """Handle sensor data for a specific tire."""
-        if len(data) < 10:  # Ensure we have enough data
-            _LOGGER.error("Insufficient data length for sensor reading")
+        if len(data) < 10:
             return
 
-        if data[0] == 0x00:  # Only process actual sensor readings
+        if data[0] == 0x00:
             try:
                 temperature = data[7]
                 pressure = data[9]
+                sensor_id_str = "-".join(f"{b:02X}" for b in sensor_id)
 
-                sensor_mappings = {
-                    bytes.fromhex(TIRE1_SENSOR_ID.replace("-", "")): ("tire_1", 1),
-                    bytes.fromhex(TIRE2_SENSOR_ID.replace("-", "")): ("tire_2", 2),
-                    bytes.fromhex(TIRE3_SENSOR_ID.replace("-", "")): ("tire_3", 3),
-                    bytes.fromhex(TIRE4_SENSOR_ID.replace("-", "")): ("tire_4", 4),
-                }
+                # Always store discovered sensors during learning mode
+                if self._learning_mode:
+                    self._discovered_sensors.add(sensor_id_str)
+                    return
 
-                if sensor_id in sensor_mappings:
-                    name_prefix, tire_num = sensor_mappings[sensor_id]
-                    pressure_key = f"tire{tire_num}_pressure"
-                    temp_key = f"tire{tire_num}_temperature"
-                    # Store values directly in _data dict
+                # Normal operation - use configured mappings
+                if sensor_id in self._sensor_mappings:
+                    position = self._sensor_mappings[sensor_id]
+                    pressure_key = f"tire{position}_pressure"
+                    temp_key = f"tire{position}_temperature"
                     self._data[pressure_key] = pressure
                     self._data[temp_key] = temperature
+                    _LOGGER.debug(
+                        "Updated sensor data for position %s: pressure=%d, temp=%d", 
+                        position, pressure, temperature
+                    )
+                else:
+                    _LOGGER.debug(
+                        "Received data for unconfigured sensor %s: pressure=%d, temp=%d",
+                        sensor_id_str, pressure, temperature
+                    )
 
             except IndexError as e:
                 _LOGGER.error("Invalid sensor data format: %s", e)
