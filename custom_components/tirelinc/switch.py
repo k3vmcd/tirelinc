@@ -28,8 +28,16 @@ class TireLincMotionSwitch(SwitchEntity):
         """Initialize the motion switch."""
         self.hass = hass
         self.entry = entry
+        device_name = entry.title.lower().replace(" ", "_")
         self._attr_unique_id = f"{entry.entry_id}_motion"
+        self.entity_id = f"switch.{device_name}_motion"
         self._attr_is_on = False
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": entry.title,
+            "manufacturer": "TireLinc",
+            "model": "TPMS",
+        }
         
     @property
     def icon(self):

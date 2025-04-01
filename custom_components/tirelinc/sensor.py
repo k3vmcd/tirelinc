@@ -85,7 +85,8 @@ SENSOR_DESCRIPTIONS: dict[str, TireLincSensorEntityDescription] = {
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
+        entity_registry_visible_default=False,
+        name="Signal Strength",
     ),
 }
 
@@ -122,19 +123,24 @@ class TireLincSensorEntity(CoordinatorEntity[DataUpdateCoordinator], SensorEntit
         # Get device name part (e.g., "tirelinc_f45a")
         device_name = entry.title.lower().replace(" ", "_")
         
-        # Extract tire number and type from the key
-        key_parts = description.key.split("_", 1)  # Split only on first underscore
-        if len(key_parts) > 1:
-            tire_num = key_parts[0][4]  # Get number from "tire1"
-            measure_type = key_parts[1]  # Get "pressure" or "temperature"
-            
-            # Build entity_id (e.g., "tirelinc_f45a_tire_1_pressure")
-            entity_id = f"{device_name}_tire_{tire_num}_{measure_type}"
-            # Set display name (e.g., "Tire 1 Pressure")
-            display_name = f"Tire {tire_num} {measure_type.title()}"
+        if description.key == TireLincSensor.SIGNAL_STRENGTH:
+            # Special handling for signal strength sensor
+            entity_id = f"{device_name}_signal_strength"
+            display_name = "Signal Strength"
         else:
-            entity_id = f"{device_name}_{description.key}"
-            display_name = description.key.replace("_", " ").title()
+            # Extract tire number and type from the key
+            key_parts = description.key.split("_", 1)  # Split only on first underscore
+            if len(key_parts) > 1:
+                tire_num = key_parts[0][4]  # Get number from "tire1"
+                measure_type = key_parts[1]  # Get "pressure" or "temperature"
+                
+                # Build entity_id (e.g., "tirelinc_f45a_tire_1_pressure")
+                entity_id = f"{device_name}_tire_{tire_num}_{measure_type}"
+                # Set display name (e.g., "Tire 1 Pressure")
+                display_name = f"Tire {tire_num} {measure_type.title()}"
+            else:
+                entity_id = f"{device_name}_{description.key}"
+                display_name = description.key.replace("_", " ").title()
 
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
         self.entity_id = f"sensor.{entity_id}"

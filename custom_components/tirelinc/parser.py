@@ -101,6 +101,9 @@ class TireLincBluetoothDeviceData(BluetoothData):
                 timeout=10.0
             )
 
+            # Add signal strength to data
+            self._data["signal_strength"] = ble_device.rssi
+
             # Get characteristics
             read_char = client.services.get_characteristic(READ_CHARACTERISTIC)
             write_char = client.services.get_characteristic(WRITE_CHARACTERISTIC)
