@@ -93,6 +93,9 @@ class TireLincBluetoothDeviceData(BluetoothData):
         self._name = f"{service_info.name} {short_address(service_info.address)}"
         self.set_device_name(self._name)
         self.set_title(self._name)
+        
+        # Get RSSI from service_info
+        self._data["signal_strength"] = service_info.rssi
 
     @property
     def title(self) -> str | None:
@@ -103,9 +106,13 @@ class TireLincBluetoothDeviceData(BluetoothData):
         """Return device name."""
         return self._name
 
-    async def async_poll(self, ble_device: BLEDevice) -> dict:
+    async def async_poll(
+        self, 
+        ble_device: BLEDevice, 
+        service_info: BluetoothServiceInfo | None = None
+    ) -> dict:
         """Poll the device."""
-        self._data = {}
+        old_data = self._data.copy()  # Preserve existing data
         self._config_received = False
         self._sensor_data_received = False
         self._config_count = 0
@@ -122,13 +129,12 @@ class TireLincBluetoothDeviceData(BluetoothData):
                 timeout=10.0
             )
 
-            # Add signal strength from advertisement data
-            if hasattr(ble_device, "advertisement"):
-                self._data["signal_strength"] = ble_device.advertisement.rssi
-            else:
-                # Fallback for older versions
-                self._data["signal_strength"] = getattr(ble_device, "rssi", 0)
-
+            # Get RSSI from service_info if available
+            if service_info:
+                old_data["signal_strength"] = service_info.rssi
+            
+            self._data = old_data  # Restore preserved data
+            
             # Get characteristics
             read_char = client.services.get_characteristic(READ_CHARACTERISTIC)
             write_char = client.services.get_characteristic(WRITE_CHARACTERISTIC)
@@ -246,6 +252,7 @@ class TireLincBluetoothDeviceData(BluetoothData):
                 # Normal operation - use configured mappings
                 if sensor_id in self._sensor_mappings:
                     position = self._sensor_mappings[sensor_id]
+                    # Remove underscore from tire position number
                     pressure_key = f"tire{position}_pressure"
                     temp_key = f"tire{position}_temperature"
                     self._data[pressure_key] = pressure

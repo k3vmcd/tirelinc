@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
-from homeassistant.components.bluetooth import async_ble_device_from_address
+from homeassistant.components.bluetooth import async_ble_device_from_address, async_discovered_service_info
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
@@ -39,18 +39,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def _async_update():
         """Poll the device."""
         try:
+            service_info = None
+            for info in async_discovered_service_info(hass):
+                if info.address == address:
+                    service_info = info
+                    break
+
             device = async_ble_device_from_address(hass, address, connectable=True)
             if not device:
                 _LOGGER.error("Device %s not found", address)
                 return {}
                 
             _LOGGER.debug("Polling device %s", address)
-            data = await device_data.async_poll(device)
+            data = await device_data.async_poll(device, service_info)
             
             if not data:
                 _LOGGER.warning("No data received from device %s", address)
                 return {}
                 
+            _LOGGER.debug("Updated data: %s", data)
             return data
             
         except Exception as err:

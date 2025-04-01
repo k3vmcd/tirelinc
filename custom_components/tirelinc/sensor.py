@@ -49,16 +49,16 @@ def create_sensor_descriptions() -> dict[str, TireLincSensorEntityDescription]:
         name="Signal Strength",
     )
     
-    # Create template descriptions for tire sensors
+    # Create template descriptions for tire sensors - note underscore removed from keys
     for i in range(1, MAX_TIRES + 1):
         descriptions[f"tire{i}_pressure"] = TireLincSensorEntityDescription(
-            key=f"tire{i}_pressure",
+            key=f"tire{i}_pressure",  # Match parser data keys exactly
             native_unit_of_measurement=UnitOfPressure.PSI,
             device_class=SensorDeviceClass.PRESSURE,
             icon="mdi:car-tire-alert",
         )
         descriptions[f"tire{i}_temperature"] = TireLincSensorEntityDescription(
-            key=f"tire{i}_temperature",
+            key=f"tire{i}_temperature",  # Match parser data keys exactly
             native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
             device_class=SensorDeviceClass.TEMPERATURE,
             icon="mdi:thermometer-lines",
