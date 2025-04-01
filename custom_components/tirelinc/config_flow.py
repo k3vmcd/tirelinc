@@ -50,7 +50,7 @@ class TireLincConfigFlow(ConfigFlow, domain=DOMAIN):
         device = self._discovered_device
         assert self._discovery_info is not None
         discovery_info = self._discovery_info
-        title = device.title or device.get_device_name() or discovery_info.name
+        title = f"TireLinc {discovery_info.address.replace(':', '')[-4:].upper()}"
         if user_input is not None:
             return self.async_create_entry(title=title, data={})
 

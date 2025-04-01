@@ -23,7 +23,8 @@ from .const import (
     TIRE2_SENSOR_ID,
     TIRE3_SENSOR_ID,
     TIRE4_SENSOR_ID,
-    EXPECTED_NOTIFICATION_COUNT,
+    CONFIG_NOTIFICATION_COUNT,
+    SENSOR_NOTIFICATION_COUNT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,9 +49,15 @@ class TireLincBluetoothDeviceData(BluetoothData):
     """Data for TireLinc sensors."""
 
     def __init__(self) -> None:
+        """Initialize the parser."""
         super().__init__()
         self._name = None
         self._data = {}
+        self._config_received = False
+        self._sensor_data_received = False
+        self._config_count = 0
+        self._sensor_count = 0
+        self._event = asyncio.Event()
 
     def supported(self, service_info: BluetoothServiceInfo) -> bool:
         """Check if this device is supported."""
@@ -61,6 +68,7 @@ class TireLincBluetoothDeviceData(BluetoothData):
         self._data = {}  # Initialize empty dict for sensor values
         self.set_device_manufacturer("TireLinc")
         self.set_device_type("TPMS")
+        address_suffix = service_info.address.replace(":", "")[-4:].upper()
         self._name = f"{service_info.name} {short_address(service_info.address)}"
         self.set_device_name(self._name)
         self.set_title(self._name)
@@ -77,6 +85,11 @@ class TireLincBluetoothDeviceData(BluetoothData):
     async def async_poll(self, ble_device: BLEDevice) -> dict:
         """Poll the device."""
         self._data = {}
+        self._config_received = False
+        self._sensor_data_received = False
+        self._config_count = 0
+        self._sensor_count = 0
+        self._event.clear()
         client = None
         
         try:
@@ -88,48 +101,35 @@ class TireLincBluetoothDeviceData(BluetoothData):
                 timeout=10.0
             )
 
-            # Initialize event for notifications
-            self._event = asyncio.Event()
-            self._event.clear()
-
             # Get characteristics
             read_char = client.services.get_characteristic(READ_CHARACTERISTIC)
             write_char = client.services.get_characteristic(WRITE_CHARACTERISTIC)
 
             if not read_char or not write_char:
-                _LOGGER.error(
-                    "Missing required characteristics. Read: %s, Write: %s",
-                    bool(read_char),
-                    bool(write_char)
-                )
+                _LOGGER.error("Missing required characteristics")
                 return self._data
 
-            # Enable notifications
+            # Enable notifications first
             await client.start_notify(read_char, self.notification_handler)
+            await asyncio.sleep(0.5)  # Short delay before writing
             
-            # Write command to request data - no response needed
-            command = bytearray([0x01])  # Simplified command
+            # Write command to request data
+            command = bytearray([0x01])
             await client.write_gatt_char(write_char, command, response=False)
             
-            # Wait for notifications with timeout
+            # Wait for data with timeout
             try:
                 await asyncio.wait_for(self._event.wait(), timeout=5.0)
             except asyncio.TimeoutError:
-                _LOGGER.warning("Timeout waiting for notifications")
-
-            # Read any remaining data
-            try:
-                data = await client.read_gatt_char(read_char)
-                if data and len(data) >= 10:
-                    self._process_data(data)
-            except Exception as err:
-                _LOGGER.warning("Error reading final data: %s", err)
+                _LOGGER.warning("Timeout waiting for complete data")
+                # Return partial data if we have any
+                return self._data
 
         except Exception as err:
             _LOGGER.error("Error polling device: %s", err)
 
         finally:
-            if client:
+            if client and client.is_connected:
                 try:
                     await client.disconnect()
                 except Exception as err:
@@ -148,13 +148,43 @@ class TireLincBluetoothDeviceData(BluetoothData):
         _LOGGER.warn("Update interval: %s", UPDATE_INTERVAL)
         return not last_poll or last_poll > UPDATE_INTERVAL
 
-    # @retry_bluetooth_connection_error()
     def notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""
-        _LOGGER.debug("Received notification: %s", data.hex() if data else None)
-        if data and len(data) >= 10:
-            self._process_data(data)
-            self._event.set()  # Signal that we got data
+        if not data:
+            return
+
+        _LOGGER.debug("Received notification: %s", data.hex())
+        
+        try:
+            # Config packets (0x02) and sensor data packets (0x00)
+            packet_type = data[0]
+            
+            if packet_type == 0x02:
+                self._config_count += 1
+                _LOGGER.debug("Config packet received (%d/%d)", 
+                            self._config_count, CONFIG_NOTIFICATION_COUNT)
+                if self._config_count >= CONFIG_NOTIFICATION_COUNT:
+                    self._config_received = True
+                    _LOGGER.debug("Config data complete")
+            
+            elif packet_type == 0x00:
+                self._process_data(data)
+                self._sensor_count += 1
+                _LOGGER.debug("Sensor packet received (%d/%d)", 
+                            self._sensor_count, SENSOR_NOTIFICATION_COUNT)
+                if self._sensor_count >= SENSOR_NOTIFICATION_COUNT:
+                    self._sensor_data_received = True
+                    _LOGGER.debug("Sensor data complete")
+            
+            # Set event when either condition is met:
+            # 1. Both config and sensor data are complete
+            # 2. Just sensor data is complete (config data might not always arrive)
+            if (self._config_received and self._sensor_data_received) or self._sensor_data_received:
+                self._event.set()
+                _LOGGER.debug("Setting completion event")
+
+        except Exception as err:
+            _LOGGER.error("Error handling notification: %s", err)
 
     def _process_data(self, data: bytearray) -> None:
         """Process the raw sensor data."""
@@ -189,32 +219,19 @@ class TireLincBluetoothDeviceData(BluetoothData):
                 pressure = data[9]
 
                 sensor_mappings = {
-                    bytes.fromhex(TIRE1_SENSOR_ID.replace("-", "")): (
-                        TireLincSensor.TIRE1_PRESSURE,
-                        TireLincSensor.TIRE1_TEMPERATURE,
-                        "Tire 1"
-                    ),
-                    bytes.fromhex(TIRE2_SENSOR_ID.replace("-", "")): (
-                        TireLincSensor.TIRE2_PRESSURE,
-                        TireLincSensor.TIRE2_TEMPERATURE,
-                        "Tire 2"
-                    ),
-                    bytes.fromhex(TIRE3_SENSOR_ID.replace("-", "")): (
-                        TireLincSensor.TIRE3_PRESSURE,
-                        TireLincSensor.TIRE3_TEMPERATURE,
-                        "Tire 3"
-                    ),
-                    bytes.fromhex(TIRE4_SENSOR_ID.replace("-", "")): (
-                        TireLincSensor.TIRE4_PRESSURE,
-                        TireLincSensor.TIRE4_TEMPERATURE,
-                        "Tire 4"
-                    ),
+                    bytes.fromhex(TIRE1_SENSOR_ID.replace("-", "")): ("tire_1", 1),
+                    bytes.fromhex(TIRE2_SENSOR_ID.replace("-", "")): ("tire_2", 2),
+                    bytes.fromhex(TIRE3_SENSOR_ID.replace("-", "")): ("tire_3", 3),
+                    bytes.fromhex(TIRE4_SENSOR_ID.replace("-", "")): ("tire_4", 4),
                 }
 
                 if sensor_id in sensor_mappings:
-                    pressure_key, temp_key, name = sensor_mappings[sensor_id]
+                    name_prefix, tire_num = sensor_mappings[sensor_id]
+                    pressure_key = f"tire{tire_num}_pressure"
+                    temp_key = f"tire{tire_num}_temperature"
                     # Store values directly in _data dict
-                    self._data[str(pressure_key)] = pressure
-                    self._data[str(temp_key)] = temperature
+                    self._data[pressure_key] = pressure
+                    self._data[temp_key] = temperature
+
             except IndexError as e:
                 _LOGGER.error("Invalid sensor data format: %s", e)

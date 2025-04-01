@@ -107,7 +107,7 @@ async def async_setup_entry(
 class TireLincSensorEntity(CoordinatorEntity[DataUpdateCoordinator], SensorEntity):
     """Representation of a TireLinc sensor."""
 
-    _attr_has_entity_name = True
+    _attr_has_entity_name = False
 
     def __init__(
         self, 
@@ -118,10 +118,31 @@ class TireLincSensorEntity(CoordinatorEntity[DataUpdateCoordinator], SensorEntit
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.entity_description = description
+
+        # Get device name part (e.g., "tirelinc_f45a")
+        device_name = entry.title.lower().replace(" ", "_")
+        
+        # Extract tire number and type from the key
+        key_parts = description.key.split("_", 1)  # Split only on first underscore
+        if len(key_parts) > 1:
+            tire_num = key_parts[0][4]  # Get number from "tire1"
+            measure_type = key_parts[1]  # Get "pressure" or "temperature"
+            
+            # Build entity_id (e.g., "tirelinc_f45a_tire_1_pressure")
+            entity_id = f"{device_name}_tire_{tire_num}_{measure_type}"
+            # Set display name (e.g., "Tire 1 Pressure")
+            display_name = f"Tire {tire_num} {measure_type.title()}"
+        else:
+            entity_id = f"{device_name}_{description.key}"
+            display_name = description.key.replace("_", " ").title()
+
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self.entity_id = f"sensor.{entity_id}"
+        self._attr_name = display_name
+        
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": "TireLinc TPMS",
+            "name": entry.title,
             "manufacturer": "TireLinc",
             "model": "TPMS",
         }
