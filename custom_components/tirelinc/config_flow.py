@@ -14,7 +14,7 @@ from homeassistant.config_entries import ConfigFlow
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.const import CONF_ADDRESS
 
-from .tirelinc import TireLincBluetoothDeviceData
+from .parser import TireLincBluetoothDeviceData
 from .const import DOMAIN
 
 
