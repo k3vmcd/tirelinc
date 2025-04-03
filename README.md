@@ -115,7 +115,9 @@ You can automate this switch based on:
 - Time of day (e.g., typical travel times)
 
 ### Tire Rotation
-The integration provides a "Rotation Pattern" select entity to help manage tire rotations:
+The integration provides a "Rotation Pattern" select entity to help manage tire rotations. When you physically rotate your tires, select the matching pattern to automatically remap the sensors to their new positions.
+
+Available patterns by configuration:
 
 **2-Tire Configuration:**
 ```
