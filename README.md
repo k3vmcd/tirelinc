@@ -2,53 +2,228 @@
 [![License](https://img.shields.io/github/license/k3vmcd/ha-tirelinc.svg?style=flat-square)](LICENSE)
 [![hacs](https://img.shields.io/badge/HACS-default-orange.svg?style=flat-square)](https://hacs.xyz)
 
-
 # Home Assistant TireLinc Integration
-Integrates TireLinc TPMS (https://www.lippert.com/rv-camping/collections/tire-linc) to Home Assistant using active connection to get information from the sensors.
 
-Current Limitations:
- - You MUST successfully pair the tires to the central TireLinc repeater using the manufacturer device before data will be received by this integration. The tires report their sensor data on the 433MHz band and the central repeater unit translates that into the Bluetooth signal required by this integration. This integration will NOT read the 433MHz data directly.
- - Your personal tire sensor ID numbers need to be added to `./tirelinc/const.py`. These need to be discovered using the [nRF Connect](https://www.nordicsemi.com/Products/Development-tools/nRF-Connect-for-mobile) app on a mobile device. Open the app, press the "Connect" button on the TireLinc entry, tap "Unknown Service" to expand the entry, then press the triple arrows on the top entry for Characteristic 00000002-00b7-4807-beee-e0b0879cf3dd to subscribe to notifications. When that completes, swipe right to reveal the logs. Your tire sensor ID numbers will be the values in the four bytes after the `02` or `00`. For example, for a line that begins `00-0E-FF-47-02`, enter `0E-FF-47-02` as the tire sensor ID in `./tirelinc/const.py`. The tires will report in order from 1-4 for both the `02` and the `00` prefix. Enter into `./tirelinc/const.py` in the same order to match to the tire locations below.
- - Scans 4 tires only. May throw errors with 2 tires and currently will not scan 6 tires. (The user may manually adjust the code to edit the number of tires scanned by editing `./sensor.py`, `./tirelinc/const.py`, and `./tirelinc/parser.py`).
- - Code that could possibly expose the configured alert thresholds is currently unused and will not expose these sensors (unless user manually adds the sensors with additional edits to sensor.py). It is left in there to decode what was discovered in reverse engineering the hex data bytes. These thresholds - min/max pressure, max temperature, and max temperature change alerts - are configured in the manufactuerer device. The expectation of this integration is the user would configure native Home Assistant automations and set their own, separate thresholds within Home Assistant and therefore these manufacturer data would be irrelevant/confusing.
- - There is a known issue with polling frequency. During testing, the polling interval is shown to be quite random and range from 3 minutes up to more than 1 hour in between updates.
- - The TireLinc system regularly "loses" sensors and it is not possible for this integration to correct this shortcoming. Usually the TireLinc system should update every 15 minutes when stationary and every 5 minutes when moving. However, sometimes specific sensors do not report in until they move, and even then their update frequency is not always a consistent 5 minute interval. Potentially this is related to signal/noise ratio between the tire sensors and the central repeater. Yet, for the developer, this integration is shown to be more reliable than the manufacturer unit to report the most current data the central repeater has on each tire.
- 
+This integration connects TireLinc TPMS (Tire Pressure Monitoring System) devices to Home Assistant. It supports monitoring pressure and temperature for up to 6 tires using Bluetooth.
 
-Exposes the following sensors:
- - Tire 1 Pressure
- - Tire 1 Temperature
- - Tire 2 Pressure
- - Tire 2 Temperature
- - Tire 3 Pressure
- - Tire 3 Temperature
- - Tire 4 Pressure
- - Tire 4 Temperature
+## ⚠️ Important Upgrade Notice
 
-In a 4 tire setup, the tire locations will be:
- - Tire 1: Front Left
- - Tire 2: Rear Left
- - Tire 3: Front Right
- - Tire 4: Rear Right
+If upgrading from a version prior to 0.2.0, you MUST completely remove and reinstall the integration due to breaking changes in the sensor configuration system:
+
+1. **Backup your configuration:**
+   - Note your tire sensor positions and mappings
+   - Screenshot or record any automations using TireLinc entities
+
+2. **Remove the old integration:**
+   - Go to Settings → Devices & Services
+   - Find the TireLinc integration
+   - Click the 3 dots menu → Delete
+   - Click Delete
+   - Restart Home Assistant
+
+4. **Fresh Install:**
+   - Install the latest version via HACS
+   - Restart Home Assistant
+   - Add the integration through the UI, it should automatically detect your device
+   - Complete the new setup process
+   - Verify sensor mappings match your previous configuration
+
+5. **Post-Install:**
+   - Update any automations with new entity IDs
+   - Test all tire positions are reporting correctly
+
+## ⚠️ Important Setup Requirements
+
+1. **Pre-pairing Required**: You MUST pair the tires to the TireLinc repeater using the manufacturer's app BEFORE using this integration. The integration cannot directly read the 433MHz tire sensor signals - it only communicates with the Bluetooth repeater.
+
+2. **Sensor Discovery & Mapping**: During setup, the integration will discover your tire sensors. For correct position mapping:
+   - Download [nRF Connect](https://www.nordicsemi.com/Products/Development-tools/nRF-Connect-for-mobile)
+   - Connect to your TireLinc device
+   - Expand "Unknown Service"
+   - Subscribe to notifications on characteristic `00000002-00b7-4807-beee-e0b0879cf3dd`
+   - Check the logs (swipe right)
+   - Look for lines starting with `00` or `02`
+   - The sensor IDs are the 4 bytes after these prefixes (e.g., in `00-0E-FF-47-02`, the ID is `0E-FF-47-02`)
+   - Sensors report in order from positions 1-4 - note this order to verify correct mapping
+
+3. **Vehicle Movement**: Initial sensor discovery works best when:
+   - The vehicle has been driven recently (within 15 minutes)
+   - All tires are at normal operating temperature
+   - The vehicle is within good Bluetooth range
+
+## Features
+
+- Auto-discovery of tire sensors during setup
+- Support for 2, 4, or 6 tire configurations
+- Pressure and temperature monitoring for each tire
+- Automatic tire position mapping
+- Motion-based update frequency (faster updates while moving)
+- Tire rotation pattern selection and automatic sensor remapping
 
 ## Installation
 
-Easiest install is via [HACS](https://hacs.xyz/):
+1. Install via HACS (recommended):
+   [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=k3vmcd&repository=ha-tirelinc&category=integration)
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=k3vmcd&repository=ha-tirelinc&category=integration)
+   Navigate to: `HACS -> Explore & Add Repositories -> TireLinc`
 
-`HACS -> Explore & Add Repositories -> TireLinc`
+2. Initial Setup:
+   - The device will be auto-discovered once Bluetooth data is received
+   - Follow the configuration flow to discover and map your tire sensors
+   - Each sensor will be automatically assigned to a tire position
 
-The device will be autodiscovered once the data are received by any bluetooth proxy.
+## Requirements
 
-If you are using an ESPHome device to connect to TireLinc, ensure you have it configured with:
+1. TireLinc TPMS central repeater and tire sensors must be pre-paired using the manufacturer's app
+2. Home Assistant with Bluetooth support (built-in or ESPHome proxy)
 
-```
+### ESPHome Bluetooth Proxy Configuration
+
+If using an ESPHome device as a Bluetooth proxy, add:
+
+```yaml
 bluetooth_proxy:
   active: True
+
+# Recommended for better RAM management
+framework:
+  type: esp-idf
 ```
-and, as the ESPHome docs suggest to improve RAM management:
+
+## Technical Details
+
+- Initial Setup: The tires must first be paired with the TireLinc repeater using the manufacturer's device. The repeater translates 433MHz tire sensor signals to Bluetooth.
+
+### In Motion Switch
+The integration provides an "In Motion" switch that controls the update frequency:
+- When **OFF** (default):
+  - Uses stationary mode polling (15 minute intervals)
+  - Suitable for parked vehicles
+  - Conserves battery and network resources
+  
+- When **ON**:
+  - Activates moving mode polling (30 second intervals)
+  - Use before and during travel
+  - Provides more frequent pressure/temperature updates
+  - Note: This only increases how often we check for new data - it does not affect how frequently the sensors themselves report to the repeater
+  
+You can automate this switch based on:
+- RV Power status
+- Vehicle ignition status
+- GPS/location changes
+- Other motion sensors
+- Time of day (e.g., typical travel times)
+
+### Tire Rotation
+The integration provides a "Rotation Pattern" select entity to help manage tire rotations. When you physically rotate your tires, select the matching pattern to automatically remap the sensors to their new positions.
+
+Available patterns by configuration:
+
+**2-Tire Configuration:**
 ```
-  framework:
-    type: esp-idf
+[1/L] ↔ [2/R]    X Pattern: Simple left/right swap
 ```
+
+**4-Tire Configuration:**
+```
+Forward Cross:         Rearward Cross:        X Pattern:
+[1/FL]--→[2/RL]      [1/FL]    [4/RR]      [1/FL]↔[4/RR]
+   ↓        ↓           ↓        ↑           ↕    ↕
+[3/FR]←--[4/RR]      [2/RL]←--[3/FR]      [2/RL]↔[3/FR]
+```
+
+**6-Tire Configuration:**
+```
+Forward Cross:              Rearward Cross:             X Pattern:
+[1/FL]→[2/ML]→[3/RL]      [1/FL]    [6/RR]           [1/FL]↔[6/RR]
+                             ↓        ↑                 [2/ML]↔[5/MR]
+[4/FR]→[5/MR]→[6/RR]      [2/ML]    [5/MR]           [3/RL]↔[4/FR]
+   ↑                         ↓        ↑
+   └────────────────┘      [3/RL]←--[4/FR]
+```
+
+After selecting a pattern:
+1. The integration automatically updates sensor mappings
+2. Names and positions are updated to match the new configuration
+3. The selection resets to "Select Pattern" when complete
+
+**Legend:**
+- FL = Front Left    - FR = Front Right
+- ML = Middle Left   - MR = Middle Right
+- RL = Rear Left     - RR = Rear Right
+- → = Move to        - ↔ = Swap with
+
+### Update Frequency
+- **Stationary Mode**:
+  - Expected: Every 15 minutes
+  - Reality: May vary significantly (3-60+ minutes)
+  - Some sensors may become temporarily unavailable
+  
+- **Moving Mode**:
+  - Expected: Every 30 seconds
+  - Reality: More consistent but may still vary
+  - Movement typically "wakes up" unresponsive sensors
+
+### Tire Positions
+Standard 4-tire configuration mapping:
+- Tire 1: Front Left
+- Tire 2: Rear Left
+- Tire 3: Front Right
+- Tire 4: Rear Right
+
+For 2-tire setups:
+- Tire 1: Left
+- Tire 2: Right
+
+For 6-tire setups:
+- Tire 1: Front Left
+- Tire 2: Middle Left
+- Tire 3: Rear Left
+- Tire 4: Front Right
+- Tire 5: Middle Right
+- Tire 6: Rear Right
+
+## ⚠️ Known Limitations
+
+1. **Signal Reliability Issues**:
+   - Sensors may temporarily stop reporting without warning
+   - Some sensors require vehicle movement to resume reporting
+   - Signal quality varies with distance from repeater
+   - Metal objects (including the vehicle itself) can interfere with signals
+
+2. **Update Frequency Inconsistency**:
+   - Updates are not guaranteed at fixed intervals
+   - Stationary mode can be especially unpredictable
+   - Moving mode is more reliable but still variable
+
+3. **System Limitations**:
+   - The integration cannot fix underlying TireLinc communication issues
+   - Alert thresholds set in manufacturer's app are not exposed
+   - Use Home Assistant automations for pressure/temperature alerts
+
+## Troubleshooting
+
+1. If sensors aren't discovered:
+   - Ensure vehicle has been driven recently
+   - Verify TireLinc repeater has power
+   - Check Bluetooth connection strength
+   - Try moving closer to the vehicle
+
+2. If sensor positions are wrong:
+   - Use nRF Connect to verify sensor reporting order
+   - Delete and re-add the integration
+   - Record sensors in order during discovery
+
+3. If updates are inconsistent:
+   - This is normal behavior
+   - Consider adding automations with longer timeout periods
+   - Use state age tracking for alerts
+
+## Support
+
+For issues and feature requests, please use the [GitHub issue tracker](https://github.com/k3vmcd/ha-tirelinc/issues).
+
+When reporting issues, please include:
+- Your tire configuration (2/4/6 tires)
+- Bluetooth proxy type (built-in/ESPHome)
+- Any recent changes or updates

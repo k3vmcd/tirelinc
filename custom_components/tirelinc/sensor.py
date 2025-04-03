@@ -1,16 +1,11 @@
 """Support for TireLinc sensors."""
-
 from __future__ import annotations
 
-from .tirelinc import TireLincSensor, SensorUpdate
+import logging
+
+from dataclasses import dataclass
 
 from homeassistant import config_entries
-from homeassistant.components.bluetooth.passive_update_processor import (
-    PassiveBluetoothDataProcessor,
-    PassiveBluetoothDataUpdate,
-    PassiveBluetoothProcessorCoordinator,
-    PassiveBluetoothProcessorEntity,
-)
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -18,7 +13,6 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
-    # PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
     UnitOfPressure,
@@ -26,111 +20,53 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.sensor import sensor_device_info_to_hass_device_info
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity,
+    DataUpdateCoordinator,
+)
 
-from .device import device_key_to_bluetooth_entity_key
-from .const import DOMAIN
+from .const import DOMAIN, CONF_SENSORS, MAX_TIRES, DEFAULT_TIRE_NAMES, CONF_TIRE_NAMES
+from .parser import TireLincSensor
 
+_LOGGER = logging.getLogger(__name__)
 
+@dataclass
+class TireLincSensorEntityDescription(SensorEntityDescription):
+    """Describes TireLinc sensor entity."""
 
-SENSOR_DESCRIPTIONS: dict[str, SensorEntityDescription] = {
-    TireLincSensor.TIRE1_PRESSURE: SensorEntityDescription(
-        key=TireLincSensor.TIRE1_PRESSURE,
-        native_unit_of_measurement=UnitOfPressure.PSI,
-        device_class=SensorDeviceClass.PRESSURE,
-        icon="mdi:car-tire-alert",
-    ),
-    TireLincSensor.TIRE1_TEMPERATURE: SensorEntityDescription(
-        key=TireLincSensor.TIRE1_TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer-lines",
-    ),
-    TireLincSensor.TIRE2_PRESSURE: SensorEntityDescription(
-        key=TireLincSensor.TIRE2_PRESSURE,
-        native_unit_of_measurement=UnitOfPressure.PSI,
-        device_class=SensorDeviceClass.PRESSURE,
-        icon="mdi:car-tire-alert",
-    ),
-    TireLincSensor.TIRE2_TEMPERATURE: SensorEntityDescription(
-        key=TireLincSensor.TIRE2_TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer-lines",
-    ),
-    TireLincSensor.TIRE3_PRESSURE: SensorEntityDescription(
-        key=TireLincSensor.TIRE3_PRESSURE,
-        native_unit_of_measurement=UnitOfPressure.PSI,
-        device_class=SensorDeviceClass.PRESSURE,
-        icon="mdi:car-tire-alert",
-    ),
-    TireLincSensor.TIRE3_TEMPERATURE: SensorEntityDescription(
-        key=TireLincSensor.TIRE3_TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer-lines",
-    ),
-    TireLincSensor.TIRE4_PRESSURE: SensorEntityDescription(
-        key=TireLincSensor.TIRE4_PRESSURE,
-        native_unit_of_measurement=UnitOfPressure.PSI,
-        device_class=SensorDeviceClass.PRESSURE,
-        icon="mdi:car-tire-alert",
-    ),
-    TireLincSensor.TIRE4_TEMPERATURE: SensorEntityDescription(
-        key=TireLincSensor.TIRE4_TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer-lines",
-    ),
-    TireLincSensor.SIGNAL_STRENGTH: SensorEntityDescription(
+def create_sensor_descriptions() -> dict[str, TireLincSensorEntityDescription]:
+    """Create sensor descriptions."""
+    descriptions = {}
+    
+    # Add signal strength sensor
+    descriptions[TireLincSensor.SIGNAL_STRENGTH] = TireLincSensorEntityDescription(
         key=TireLincSensor.SIGNAL_STRENGTH,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
-    ),
-    # TireLincSensor.BATTERY_PERCENT: SensorEntityDescription(
-    #     key=TireLincSensor.BATTERY_PERCENT,
-    #     device_class=SensorDeviceClass.BATTERY,
-    #     native_unit_of_measurement=PERCENTAGE,
-    #     state_class=SensorStateClass.MEASUREMENT,
-    #     entity_category=EntityCategory.DIAGNOSTIC,
-    # ),
-    # TireLincSensor.TIMESTAMP: SensorEntityDescription(
-    #     key=TireLincSensor.TIMESTAMP,
-    #     device_class=SensorDeviceClass.TIMESTAMP,
-    #     icon="mdi:clock-time-four-outline",
-    # ),
-
-}
-
-
-def sensor_update_to_bluetooth_data_update(
-    sensor_update: SensorUpdate,
-) -> PassiveBluetoothDataUpdate:
-    """Convert a sensor update to a bluetooth data update."""
-    return PassiveBluetoothDataUpdate(
-        devices={
-            device_id: sensor_device_info_to_hass_device_info(device_info)
-            for device_id, device_info in sensor_update.devices.items()
-        },
-        entity_descriptions={
-            device_key_to_bluetooth_entity_key(device_key): SENSOR_DESCRIPTIONS[
-                device_key.key
-            ]
-            for device_key in sensor_update.entity_descriptions
-        },
-        entity_data={
-            device_key_to_bluetooth_entity_key(device_key): sensor_values.native_value
-            for device_key, sensor_values in sensor_update.entity_values.items()
-        },
-        entity_names={
-            device_key_to_bluetooth_entity_key(device_key): sensor_values.name
-            for device_key, sensor_values in sensor_update.entity_values.items()
-        },
+        entity_registry_visible_default=False,
+        name="Signal Strength",
     )
+    
+    # Create template descriptions for tire sensors - note underscore removed from keys
+    for i in range(1, MAX_TIRES + 1):
+        descriptions[f"tire{i}_pressure"] = TireLincSensorEntityDescription(
+            key=f"tire{i}_pressure",  # Match parser data keys exactly
+            native_unit_of_measurement=UnitOfPressure.PSI,
+            device_class=SensorDeviceClass.PRESSURE,
+            icon="mdi:car-tire-alert",
+        )
+        descriptions[f"tire{i}_temperature"] = TireLincSensorEntityDescription(
+            key=f"tire{i}_temperature",  # Match parser data keys exactly
+            native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            icon="mdi:thermometer-lines",
+        )
+    
+    return descriptions
 
+SENSOR_DESCRIPTIONS = create_sensor_descriptions()
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -138,44 +74,113 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the TireLinc BLE sensors."""
-    coordinator: PassiveBluetoothProcessorCoordinator = hass.data[DOMAIN][
-        entry.entry_id
-    ]
-    processor = PassiveBluetoothDataProcessor(sensor_update_to_bluetooth_data_update)
-    entry.async_on_unload(
-        processor.async_add_entities_listener(
-            TireLincBluetoothSensorEntity, async_add_entities
-        )
-    )
-    entry.async_on_unload(
-        coordinator.async_register_processor(processor, SensorEntityDescription)
-    )
+    coordinator: DataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    
+    # Get configured sensors from entry
+    configured_sensors = entry.data.get(CONF_SENSORS, {})
+    _LOGGER.debug("Setting up sensors for config: %s", configured_sensors)
+    
+    entities = []
+    
+    # Create signal strength sensor
+    signal_desc = SENSOR_DESCRIPTIONS.get("signal_strength")
+    if signal_desc:
+        entities.append(TireLincSensorEntity(coordinator, signal_desc, entry))
+        _LOGGER.debug("Added signal strength sensor")
+    
+    # Create tire sensors based on configuration
+    for tire_key, sensor_id in configured_sensors.items():
+        # Extract tire number from key (e.g., "tire_1" -> "1")
+        try:
+            tire_num = tire_key.split("_")[1]
+            _LOGGER.debug("Setting up sensors for tire %s (ID: %s)", tire_num, sensor_id)
+            
+            # Add pressure sensor
+            pressure_key = f"tire{tire_num}_pressure"
+            if pressure_key in SENSOR_DESCRIPTIONS:
+                entities.append(TireLincSensorEntity(coordinator, SENSOR_DESCRIPTIONS[pressure_key], entry))
+                _LOGGER.debug("Added pressure sensor for tire %s", tire_num)
+            
+            # Add temperature sensor
+            temp_key = f"tire{tire_num}_temperature"
+            if temp_key in SENSOR_DESCRIPTIONS:
+                entities.append(TireLincSensorEntity(coordinator, SENSOR_DESCRIPTIONS[temp_key], entry))
+                _LOGGER.debug("Added temperature sensor for tire %s", tire_num)
+                
+        except (IndexError, ValueError) as err:
+            _LOGGER.error("Error setting up tire sensors for %s: %s", tire_key, err)
+    
+    _LOGGER.debug("Created %d sensor entities", len(entities))
+    async_add_entities(entities)
 
 
-class TireLincBluetoothSensorEntity(
-    PassiveBluetoothProcessorEntity,
-    SensorEntity,
-):
+class TireLincSensorEntity(CoordinatorEntity[DataUpdateCoordinator], SensorEntity):
     """Representation of a TireLinc sensor."""
+
+    _attr_has_entity_name = False
+
+    def __init__(
+        self, 
+        coordinator: DataUpdateCoordinator,
+        description: TireLincSensorEntityDescription,
+        entry: config_entries.ConfigEntry,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self.entity_description = description
+        
+        # Get device name part (e.g., "tirelinc_f45a")
+        device_name = entry.title.lower().replace(" ", "_")
+        
+        if description.key == TireLincSensor.SIGNAL_STRENGTH:
+            # Special handling for signal strength sensor
+            entity_id = f"{device_name}_signal_strength"
+            display_name = "Signal Strength"
+        else:
+            # Extract tire number and type from the key
+            key_parts = description.key.split("_", 1)
+            if len(key_parts) > 1:
+                tire_num = key_parts[0][4]  # Get number from "tire1"
+                measure_type = key_parts[1]  # Get "pressure" or "temperature"
+                
+                # Get number of configured tires
+                configured_sensors = entry.data.get(CONF_SENSORS, {})
+                num_tires = len(configured_sensors)
+                
+                # Get configured names or default names for this configuration
+                tire_names = entry.data.get(CONF_TIRE_NAMES, DEFAULT_TIRE_NAMES.get(num_tires, {}))
+                tire_name = tire_names.get(f"tire_{tire_num}", f"Tire {tire_num}")
+                
+                # Build entity_id
+                entity_id = f"{device_name}_tire_{tire_num}_{measure_type}"
+                # Set display name using friendly name
+                display_name = f"{tire_name} {measure_type.title()}"
+            else:
+                entity_id = f"{device_name}_{description.key}"
+                display_name = description.key.replace("_", " ").title()
+
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self.entity_id = f"sensor.{entity_id}"
+        self._attr_name = display_name
+        
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": entry.title,
+            "manufacturer": "TireLinc",
+            "model": "TPMS",
+        }
 
     @property
     def native_value(self) -> str | int | None:
         """Return the native value."""
-        return self.processor.entity_data.get(self.entity_key)
+        if not self.coordinator.data:
+            return None
+        try:
+            return self.coordinator.data[self.entity_description.key]
+        except (KeyError, TypeError):
+            return None
 
     @property
     def available(self) -> bool:
-        """Return True if entity is available.
-
-        The sensor is only created when the device is seen.
-
-        Since these are sleepy devices which stop broadcasting
-        when not in use, we can't rely on the last update time
-        so once we have seen the device we always return True.
-        """
-        return True
-
-    @property
-    def assumed_state(self) -> bool:
-        """Return True if the device is no longer broadcasting."""
-        return not self.processor.available
+        """Return True if entity is available."""
+        return self.coordinator.last_update_success

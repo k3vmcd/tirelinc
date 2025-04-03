@@ -3,13 +3,24 @@
     "flow_title": "[%key:component::bluetooth::config::flow_title%]",
     "step": {
       "user": {
-        "description": "[%key:component::bluetooth::config::step::user::description%]",
+        "title": "TireLinc Setup",
+        "description": "Would you like to discover tire sensors? Make sure your tires are sending data (vehicle recently moved).",
         "data": {
-          "address": "[%key:common::config_flow::data::device%]"
+          "learning_mode": "Discover Tire Sensors"
         }
       },
       "bluetooth_confirm": {
         "description": "[%key:component::bluetooth::config::step::bluetooth_confirm::description%]"
+      },
+      "configure_sensors": {
+        "title": "Configure Tire Sensors",
+        "description": "Discovered sensors: {sensors}\n\nAssign each sensor to a tire position.",
+        "data": {
+          "tire_1": "Tire 1 (Front Left)",
+          "tire_2": "Tire 2 (Rear Left)",
+          "tire_3": "Tire 3 (Front Right)", 
+          "tire_4": "Tire 4 (Rear Right)"
+        }
       }
     },
     "abort": {
@@ -17,6 +28,9 @@
       "no_devices_found": "[%key:common::config_flow::abort::no_devices_found%]",
       "already_in_progress": "[%key:common::config_flow::abort::already_in_progress%]",
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+    },
+    "error": {
+      "no_sensors": "No tire sensors were discovered. Please try again."
     }
   }
 }

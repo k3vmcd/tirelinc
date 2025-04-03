@@ -1,90 +1,82 @@
 """The TireLinc integration."""
-
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
-
-from homeassistant.components.bluetooth import (
-    BluetoothScanningMode,
-    BluetoothServiceInfoBleak,
-    async_ble_device_from_address,
-)
-from homeassistant.components.bluetooth.active_update_processor import (
-    ActiveBluetoothProcessorCoordinator,
-)
+from homeassistant.components.bluetooth import async_ble_device_from_address, async_discovered_service_info
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
+from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import CoreState, HomeAssistant
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.update_coordinator import (
+    DataUpdateCoordinator,
+    UpdateFailed,
+)
 
-from .tirelinc import TireLincBluetoothDeviceData, SensorUpdate
-from .const import DOMAIN
+from .const import DOMAIN, POLL_INTERVAL_STATIONARY, POLL_INTERVAL_MOVING, CONF_SENSORS
+from .parser import TireLincBluetoothDeviceData
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.SWITCH, Platform.SELECT]
 
 _LOGGER = logging.getLogger(__name__)
 
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up TireLinc BLE device from a config entry."""
+    """Set up TireLinc from a config entry."""
     address = entry.unique_id
-    assert address is not None
-    data = TireLincBluetoothDeviceData()
+    if address is None:
+        raise ConfigEntryNotReady("Device address not found")
 
-    def _needs_poll(
-        service_info: BluetoothServiceInfoBleak, last_poll: float | None
-    ) -> bool:
-        # Only poll if hass is running, we need to poll,
-        # and we actually have a way to connect to the device
-        return (
-            hass.state is CoreState.running
-            and data.poll_needed(service_info, last_poll)
-            and bool(
-                async_ble_device_from_address(
-                    hass, service_info.device.address, connectable=True
-                )
-            )
-        )
+    device_data = TireLincBluetoothDeviceData()
+    
+    # Set sensor mappings from config entry
+    if CONF_SENSORS in entry.data:
+        _LOGGER.debug("Setting up sensor mappings: %s", entry.data[CONF_SENSORS])
+        device_data.set_sensor_mappings(entry.data[CONF_SENSORS])
 
-    async def _async_poll(service_info: BluetoothServiceInfoBleak) -> SensorUpdate:
-        # Make sure the device we have is one that we can connect with
-        # in case its coming from a passive scanner
-        if service_info.connectable:
-            connectable_device = service_info.device
-        elif device := async_ble_device_from_address(
-            hass, service_info.device.address, True
-        ):
-            connectable_device = device
-        else:
-            # We have no bluetooth controller that is in range of
-            # the device to poll it
-            raise RuntimeError(
-                f"No connectable device found for {service_info.device.address}"
-            )
-        return await data.async_poll(connectable_device)
+    async def _async_update():
+        """Poll the device."""
+        try:
+            service_info = None
+            for info in async_discovered_service_info(hass):
+                if info.address == address:
+                    service_info = info
+                    break
 
-    coordinator = hass.data.setdefault(DOMAIN, {})[
-        entry.entry_id
-    ] = ActiveBluetoothProcessorCoordinator(
+            device = async_ble_device_from_address(hass, address, connectable=True)
+            if not device:
+                _LOGGER.error("Device %s not found", address)
+                return {}
+                
+            _LOGGER.debug("Polling device %s", address)
+            data = await device_data.async_poll(device, service_info)
+            
+            if not data:
+                _LOGGER.warning("No data received from device %s", address)
+                return {}
+                
+            _LOGGER.debug("Updated data: %s", data)
+            return data
+            
+        except Exception as err:
+            _LOGGER.error("Error polling device %s: %s", address, err)
+            return {}
+
+    coordinator = TireLincDataUpdateCoordinator(
         hass,
         _LOGGER,
-        address=address,
-        mode=BluetoothScanningMode.PASSIVE,
-        update_method=data.update,
-        needs_poll_method=_needs_poll,
-        poll_method=_async_poll,
-        # We will take advertisements from non-connectable devices
-        # since we will trade the BLEDevice for a connectable one
-        # if we need to poll it
-        connectable=False,
+        name=DOMAIN,
+        update_method=_async_update,
+        update_interval=timedelta(seconds=POLL_INTERVAL_STATIONARY),
     )
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    entry.async_on_unload(
-        # only start after all platforms have had a chance to subscribe
-        coordinator.async_start()
-    )
-    return True
 
+    # Initial data fetch
+    await coordinator.async_config_entry_first_refresh()
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
@@ -92,3 +84,44 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
+
+class TireLincDataUpdateCoordinator(DataUpdateCoordinator):
+    """Class to manage fetching TireLinc data."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        logger: logging.Logger,
+        *,
+        name: str,
+        update_interval: timedelta,
+        update_method: callable,
+    ) -> None:
+        """Initialize."""
+        super().__init__(
+            hass,
+            logger,
+            name=name,
+            update_interval=update_interval,
+        )
+        self._update_method = update_method
+
+    def set_update_interval(self, is_moving: bool) -> None:
+        """Update the polling interval based on motion state."""
+        self.update_interval = timedelta(
+            seconds=POLL_INTERVAL_MOVING if is_moving else POLL_INTERVAL_STATIONARY
+        )
+        _LOGGER.debug(
+            "Setting update interval to %s seconds",
+            POLL_INTERVAL_MOVING if is_moving else POLL_INTERVAL_STATIONARY,
+        )
+        self.async_set_updated_data(self.data)
+
+    async def _async_update_data(self):
+        """Fetch data from API endpoint."""
+        try:
+            data = await self._update_method()
+            _LOGGER.debug("Updated data: %s", data)
+            return data
+        except Exception as err:
+            raise UpdateFailed(f"Error communicating with device: {err}")
