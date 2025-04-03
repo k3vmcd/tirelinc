@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import (
 from .const import DOMAIN, POLL_INTERVAL_STATIONARY, POLL_INTERVAL_MOVING, CONF_SENSORS
 from .parser import TireLincBluetoothDeviceData
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.SWITCH]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.SWITCH, Platform.SELECT]
 
 _LOGGER = logging.getLogger(__name__)
 

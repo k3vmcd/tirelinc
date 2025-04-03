@@ -25,7 +25,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from .const import DOMAIN, CONF_SENSORS, MAX_TIRES
+from .const import DOMAIN, CONF_SENSORS, MAX_TIRES, DEFAULT_TIRE_NAMES, CONF_TIRE_NAMES
 from .parser import TireLincSensor
 
 _LOGGER = logging.getLogger(__name__)
@@ -128,7 +128,7 @@ class TireLincSensorEntity(CoordinatorEntity[DataUpdateCoordinator], SensorEntit
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.entity_description = description
-
+        
         # Get device name part (e.g., "tirelinc_f45a")
         device_name = entry.title.lower().replace(" ", "_")
         
@@ -138,15 +138,23 @@ class TireLincSensorEntity(CoordinatorEntity[DataUpdateCoordinator], SensorEntit
             display_name = "Signal Strength"
         else:
             # Extract tire number and type from the key
-            key_parts = description.key.split("_", 1)  # Split only on first underscore
+            key_parts = description.key.split("_", 1)
             if len(key_parts) > 1:
                 tire_num = key_parts[0][4]  # Get number from "tire1"
                 measure_type = key_parts[1]  # Get "pressure" or "temperature"
                 
-                # Build entity_id (e.g., "tirelinc_f45a_tire_1_pressure")
+                # Get number of configured tires
+                configured_sensors = entry.data.get(CONF_SENSORS, {})
+                num_tires = len(configured_sensors)
+                
+                # Get configured names or default names for this configuration
+                tire_names = entry.data.get(CONF_TIRE_NAMES, DEFAULT_TIRE_NAMES.get(num_tires, {}))
+                tire_name = tire_names.get(f"tire_{tire_num}", f"Tire {tire_num}")
+                
+                # Build entity_id
                 entity_id = f"{device_name}_tire_{tire_num}_{measure_type}"
-                # Set display name (e.g., "Tire 1 Pressure")
-                display_name = f"Tire {tire_num} {measure_type.title()}"
+                # Set display name using friendly name
+                display_name = f"{tire_name} {measure_type.title()}"
             else:
                 entity_id = f"{device_name}_{description.key}"
                 display_name = description.key.replace("_", " ").title()
