@@ -6,6 +6,32 @@
 
 This integration connects TireLinc TPMS (Tire Pressure Monitoring System) devices to Home Assistant. It supports monitoring pressure and temperature for up to 6 tires using Bluetooth.
 
+## ⚠️ Important Upgrade Notice
+
+If upgrading from a version prior to 0.2.0, you MUST completely remove and reinstall the integration due to breaking changes in the sensor configuration system:
+
+1. **Backup your configuration:**
+   - Note your tire sensor positions and mappings
+   - Screenshot or record any automations using TireLinc entities
+
+2. **Remove the old integration:**
+   - Go to Settings → Devices & Services
+   - Find the TireLinc integration
+   - Click the 3 dots menu → Delete
+   - Click Delete
+   - Restart Home Assistant
+
+4. **Fresh Install:**
+   - Install the latest version via HACS
+   - Restart Home Assistant
+   - Add the integration through the UI, it should automatically detect your device
+   - Complete the new setup process
+   - Verify sensor mappings match your previous configuration
+
+5. **Post-Install:**
+   - Update any automations with new entity IDs
+   - Test all tire positions are reporting correctly
+
 ## ⚠️ Important Setup Requirements
 
 1. **Pre-pairing Required**: You MUST pair the tires to the TireLinc repeater using the manufacturer's app BEFORE using this integration. The integration cannot directly read the 433MHz tire sensor signals - it only communicates with the Bluetooth repeater.
