@@ -121,25 +121,54 @@ Available patterns by configuration:
 
 **2-Tire Configuration:**
 ```
-[1/L] ↔ [2/R]    X Pattern: Simple left/right swap
+X Pattern:
+[1/L] ↔ [2/R]    # Left and Right swap
 ```
 
 **4-Tire Configuration:**
 ```
-Forward Cross:         Rearward Cross:        X Pattern:
-[1/FL]--→[2/RL]      [1/FL]    [4/RR]      [1/FL]↔[4/RR]
-   ↓        ↓           ↓        ↑           ↕    ↕
-[3/FR]←--[4/RR]      [2/RL]←--[3/FR]      [2/RL]↔[3/FR]
+Forward Cross:
+[1/FL] → [2/RL]    # Front Left to Rear Left
+[2/RL] → [3/FR]    # Rear Left to Front Right
+[3/FR] → [4/RR]    # Front Right to Rear Right
+[4/RR] → [1/FL]    # Rear Right to Front Left
+
+Rearward Cross:
+[1/FL] → [4/RR]    # Front Left to Rear Right
+[2/RL] → [1/FL]    # Rear Left to Front Left
+[3/FR] → [2/RL]    # Front Right to Rear Left
+[4/RR] → [3/FR]    # Rear Right to Front Right
+
+X Pattern:
+[1/FL] ↔ [4/RR]    # Front Left and Rear Right swap
+[2/RL] ↔ [3/FR]    # Rear Left and Front Right swap
 ```
 
 **6-Tire Configuration:**
 ```
-Forward Cross:              Rearward Cross:             X Pattern:
-[1/FL]→[2/ML]→[3/RL]      [1/FL]    [6/RR]           [1/FL]↔[6/RR]
-                             ↓        ↑                 [2/ML]↔[5/MR]
-[4/FR]→[5/MR]→[6/RR]      [2/ML]    [5/MR]           [3/RL]↔[4/FR]
-   ↑                         ↓        ↑
-   └────────────────┘      [3/RL]←--[4/FR]
+Forward Cross:
+[1/FL] → [2/ML]    # Front Left to Middle Left
+[2/ML] → [3/RL]    # Middle Left to Rear Left
+[3/RL] → [4/FR]    # Rear Left to Front Right
+[4/FR] → [5/MR]    # Front Right to Middle Right
+[5/MR] → [6/RR]    # Middle Right to Rear Right
+[6/RR] → [1/FL]    # Rear Right to Front Left
+
+Rearward Cross:
+[1/FL] → [6/RR]    # Front Left to Rear Right
+[2/ML] → [1/FL]    # Middle Left to Front Left
+[3/RL] → [2/ML]    # Rear Left to Middle Left
+[4/FR] → [3/RL]    # Front Right to Rear Left
+[5/MR] → [4/FR]    # Middle Right to Front Right
+[6/RR] → [5/MR]    # Rear Right to Middle Right
+
+X Pattern:
+[1/FL] → [6/RR]    # Front Left to Rear Right
+[2/ML] → [5/MR]    # Middle Left to Middle Right
+[3/RL] → [4/FR]    # Rear Left to Front Right
+[4/FR] → [3/RL]    # Front Right to Rear Left
+[5/MR] → [2/ML]    # Middle Right to Middle Left
+[6/RR] → [1/FL]    # Rear Right to Front Left
 ```
 
 After selecting a pattern:
@@ -151,7 +180,7 @@ After selecting a pattern:
 - FL = Front Left    - FR = Front Right
 - ML = Middle Left   - MR = Middle Right
 - RL = Rear Left     - RR = Rear Right
-- → = Move to        - ↔ = Swap with
+- → = Moves to       - ↔ = Swaps with
 
 ### Update Frequency
 - **Stationary Mode**:

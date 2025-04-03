@@ -97,11 +97,11 @@ ROTATION_PATTERNS = {
         "forward_cross": {
             "name": "Forward Cross (6-Tire)",
             "mapping": {
-                "tire_1": "tire_3",  # Front Left -> Middle Left
-                "tire_2": "tire_2",  # Middle Left -> Rear Left
+                "tire_1": "tire_2",  # Front Left -> Middle Left
+                "tire_2": "tire_3",  # Middle Left -> Rear Left
                 "tire_3": "tire_4",  # Rear Left -> Front Right
-                "tire_4": "tire_6",  # Front Right -> Middle Right
-                "tire_5": "tire_5",  # Middle Right -> Rear Right
+                "tire_4": "tire_5",  # Front Right -> Middle Right
+                "tire_5": "tire_6",  # Middle Right -> Rear Right
                 "tire_6": "tire_1"   # Rear Right -> Front Left
             }
         },
@@ -109,11 +109,11 @@ ROTATION_PATTERNS = {
             "name": "Rearward Cross (6-Tire)",
             "mapping": {
                 "tire_1": "tire_6",  # Front Left -> Rear Right
-                "tire_2": "tire_2",  # Middle Left -> Front Left
-                "tire_3": "tire_4",  # Rear Left -> Middle Left
+                "tire_2": "tire_1",  # Middle Left -> Front Left
+                "tire_3": "tire_2",  # Rear Left -> Middle Left
                 "tire_4": "tire_3",  # Front Right -> Rear Left
-                "tire_5": "tire_5",  # Middle Right -> Front Right
-                "tire_6": "tire_1"   # Rear Right -> Middle Right
+                "tire_5": "tire_4",  # Middle Right -> Front Right
+                "tire_6": "tire_5"   # Rear Right -> Middle Right
             }
         },
         "x_pattern": {
