@@ -10,9 +10,12 @@
   "codeowners": ["@k3vmcd"],
   "config_flow": true,
   "dependencies": ["bluetooth_adapters"],
-  "documentation": "https://github.com/k3vmcd/ha-tirelinc",
+  "documentation": "https://github.com/k3vmcd/tirelinc",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/k3vmcd/ha-tirelinc/issues",
-  "requirements": [],
+  "issue_tracker": "https://github.com/k3vmcd/tirelinc/issues",
+  "requirements": [
+    "bluetooth-sensor-state-data>=1.7.0",
+    "sensor-state-data>=2.18.1"
+  ],
   "version": "0.2.0"
 }

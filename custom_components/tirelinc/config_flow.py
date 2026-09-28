@@ -1,6 +1,5 @@
 """Config flow for TireLinc integration."""
 from __future__ import annotations
-import asyncio
 import logging
 from typing import Any
 
@@ -13,9 +12,8 @@ from homeassistant.components.bluetooth import (
     async_ble_device_from_address,
 )
 from homeassistant.const import CONF_ADDRESS
-from homeassistant.data_entry_flow import FlowResult
 
-from .const import DOMAIN, CONF_SENSORS, CONF_LEARNING_MODE, DISCOVERY_TIMEOUT, MAX_TIRES
+from .const import DOMAIN, CONF_SENSORS, CONF_LEARNING_MODE
 from .parser import TireLincBluetoothDeviceData
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,7 +32,7 @@ class TireLincConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> config_entries.ConfigFlowResult:
         """Handle the initial step."""
         if user_input is not None:
             self._learning_mode = user_input[CONF_LEARNING_MODE]
@@ -51,7 +49,7 @@ class TireLincConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_bluetooth_discovery(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> config_entries.ConfigFlowResult:
         """Handle bluetooth discovery step."""
         _LOGGER.debug("Starting Bluetooth discovery")
         
@@ -70,7 +68,7 @@ class TireLincConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
-    ) -> FlowResult:
+    ) -> config_entries.ConfigFlowResult:
         """Handle the bluetooth discovery step."""
         _LOGGER.debug("Bluetooth discovery step: %s", discovery_info.address)
         await self.async_set_unique_id(discovery_info.address)
@@ -85,7 +83,7 @@ class TireLincConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_bluetooth_confirm(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> config_entries.ConfigFlowResult:
         """Confirm bluetooth discovery."""
         _LOGGER.debug("Bluetooth confirm step")
         if user_input is not None:
@@ -96,7 +94,7 @@ class TireLincConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders=self.context["title_placeholders"],
         )
 
-    async def _process_discovery(self) -> FlowResult:
+    async def _process_discovery(self) -> config_entries.ConfigFlowResult:
         """Process the discovery."""
         _LOGGER.debug("Processing discovery for: %s", self._discovery_info.address)
         if self._learning_mode:
@@ -136,7 +134,7 @@ class TireLincConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_configure_sensors(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> config_entries.ConfigFlowResult:
         """Let user configure discovered sensors."""
         errors = {}
 

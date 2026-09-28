@@ -5,8 +5,6 @@ import logging
 from datetime import timedelta
 
 from homeassistant.components.bluetooth import async_ble_device_from_address, async_discovered_service_info
-from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
-from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -67,6 +65,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = TireLincDataUpdateCoordinator(
         hass,
         _LOGGER,
+        config_entry=entry,
         name=DOMAIN,
         update_method=_async_update,
         update_interval=timedelta(seconds=POLL_INTERVAL_STATIONARY),
@@ -93,6 +92,7 @@ class TireLincDataUpdateCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         logger: logging.Logger,
         *,
+        config_entry: ConfigEntry,
         name: str,
         update_interval: timedelta,
         update_method: callable,
@@ -101,6 +101,7 @@ class TireLincDataUpdateCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             logger,
+            config_entry=config_entry,
             name=name,
             update_interval=update_interval,
         )

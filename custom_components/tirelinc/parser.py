@@ -12,11 +12,9 @@ from bleak_retry_connector import (
 from home_assistant_bluetooth import BluetoothServiceInfo
 from bluetooth_data_tools import short_address
 from bluetooth_sensor_state_data import BluetoothData
-from sensor_state_data import SensorDeviceClass, SensorUpdate, Units
 from sensor_state_data.enum import StrEnum
 
 from .const import (
-    SERVICE_UUID,
     READ_CHARACTERISTIC,
     WRITE_CHARACTERISTIC,
     CONFIG_NOTIFICATION_COUNT,
@@ -89,7 +87,6 @@ class TireLincBluetoothDeviceData(BluetoothData):
         self._data = {}  # Initialize empty dict for sensor values
         self.set_device_manufacturer("TireLinc")
         self.set_device_type("TPMS")
-        address_suffix = service_info.address.replace(":", "")[-4:].upper()
         self._name = f"{service_info.name} {short_address(service_info.address)}"
         self.set_device_name(self._name)
         self.set_title(self._name)
@@ -170,17 +167,6 @@ class TireLincBluetoothDeviceData(BluetoothData):
                     _LOGGER.warning("Error disconnecting: %s", err)
 
         return self._data
-
-    def poll_needed(
-        self, service_info: BluetoothServiceInfo, last_poll: float | None
-    ) -> bool:
-        """
-        This is called every time we get a service_info for a device. It means the
-        device is working and online.
-        """
-        _LOGGER.warn("Last poll: %s", last_poll)
-        _LOGGER.warn("Update interval: %s", UPDATE_INTERVAL)
-        return not last_poll or last_poll > UPDATE_INTERVAL
 
     def notification_handler(self, _sender: int, data: bytearray) -> None:
         """Handle notification responses."""

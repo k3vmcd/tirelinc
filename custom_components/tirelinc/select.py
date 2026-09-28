@@ -2,17 +2,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers import device_registry as dr
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import (
     DOMAIN, ROTATION_PATTERNS, CONF_SENSORS, 
-    CONF_TIRE_NAMES, TIRE_CONFIGS, DEFAULT_TIRE_NAMES
+    CONF_TIRE_NAMES, DEFAULT_TIRE_NAMES
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,7 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the rotation pattern select entity."""
     async_add_entities([TireRotationPatternSelect(hass, entry)])
