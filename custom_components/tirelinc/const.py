@@ -6,7 +6,6 @@ DOMAIN = "tirelinc"
 # Update intervals (in seconds)
 POLL_INTERVAL_STATIONARY = 900  # 15 minutes
 POLL_INTERVAL_MOVING = 30  # 30 seconds - increased from 15 to reduce device stress
-UPDATE_INTERVAL = POLL_INTERVAL_STATIONARY  # Default to stationary interval
 
 # Bluetooth characteristics - TireLinc device
 SERVICE_UUID = "00000000-00b7-4807-beee-e0b0879cf3dd"  # Main service
@@ -16,7 +15,6 @@ WRITE_CHARACTERISTIC = "00000001-00b7-4807-beee-e0b0879cf3dd"  # Write character
 # Configuration constants
 CONF_SENSORS = "sensors"
 CONF_LEARNING_MODE = "learning_mode"
-DISCOVERY_TIMEOUT = 300  # 5 minutes to discover sensors
 MAX_TIRES = 6  # Maximum number of tires supported
 
 # Default notification counts
@@ -44,13 +42,6 @@ DEFAULT_TIRE_NAMES = {
         "tire_5": "Middle Right Tire",
         "tire_6": "Rear Right Tire"
     }
-}
-
-# Tire configurations
-TIRE_CONFIGS = {
-    2: ["tire_1", "tire_2"],  # Front only
-    4: ["tire_1", "tire_2", "tire_3", "tire_4"],  # Standard 4-tire
-    6: ["tire_1", "tire_2", "tire_3", "tire_4", "tire_5", "tire_6"]  # 6-tire
 }
 
 # Rotation patterns by tire count
@@ -131,4 +122,3 @@ ROTATION_PATTERNS = {
 }
 
 CONF_TIRE_NAMES = "tire_names"
-CONF_ROTATION_PATTERN = "rotation_pattern"

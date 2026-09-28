@@ -19,7 +19,7 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -71,7 +71,7 @@ SENSOR_DESCRIPTIONS = create_sensor_descriptions()
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: config_entries.ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the TireLinc BLE sensors."""
     coordinator: DataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
